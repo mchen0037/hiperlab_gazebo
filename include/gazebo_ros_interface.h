@@ -11,7 +11,7 @@
 #include "hiperlab_rostools/simulator_truth.h"
 
 namespace gazebo {
-
+ 
 class GazeboRosInterface : public ModelPlugin {
 public:
     GazeboRosInterface() : ModelPlugin() {}
