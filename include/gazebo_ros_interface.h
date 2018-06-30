@@ -1,6 +1,8 @@
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <iostream>
+#include <gazebo/transport/transport.hh>
+#include <gazebo/msgs/msgs.hh>
 
 //for ROS
 #include <thread>
@@ -11,23 +13,25 @@
 #include "hiperlab_rostools/simulator_truth.h"
 
 namespace gazebo {
- 
+
 class GazeboRosInterface : public ModelPlugin {
 public:
     GazeboRosInterface() : ModelPlugin() {}
 
 protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr);
-  void OnUpdate();
+  void OnUpdate(const common::UpdateInfo&  /*_info*/);
 
 private:
   void QueueThread();
   void TmpCallback(const std_msgs::Float32ConstPtr &_msg);
-  private: physics::ModelPtr model;
+  event::ConnectionPtr updateConnection_;
+  physics::ModelPtr model;
   ros::Subscriber rosSub;
   ros::Publisher simulator_truth_pub;
   ros::CallbackQueue rosQueue;
   std::thread rosQueueThread;
   std::unique_ptr<ros::NodeHandle> nh;
+  hiperlab_rostools::simulator_truth GetCurrentTruth();
   };
 }

@@ -10,6 +10,9 @@ namespace gazebo {
   void GazeboRosInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     model = _model;
 
+    updateConnection_ = event::Events::ConnectWorldUpdateBegin(
+        boost::bind(&GazeboRosInterface::OnUpdate, this, _1));
+
     //initialize ROS
     if (!ros::isInitialized()) {
       int argc = 0;
@@ -18,9 +21,9 @@ namespace gazebo {
     }
     this->nh.reset(new ros::NodeHandle("gazebo_client"));
 
-    //ROS Subscriber
+    //ROS Subscriber FIXME: std_msgs::Float32 will change
     ros::SubscribeOptions so = ros::SubscribeOptions::create<std_msgs::Float32>(
-      "/" + this->model->GetName() + "/cmd_vel",
+      "/" + this->model->GetName() + "/rotors_motor_speed",
       1,
       boost::bind(&GazeboRosInterface::TmpCallback, this, _1),
       ros::VoidPtr(), &this->rosQueue);
@@ -31,10 +34,49 @@ namespace gazebo {
       "/" + this->model->GetName() + "simulator_truth",
       1);
 
-
     //handle ROS multi-threading
     this->rosQueueThread = std::thread(std::bind(&GazeboRosInterface::QueueThread, this));
     return;
+  }
+
+  void GazeboRosInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
+    hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
+    this->simulator_truth_pub.publish(current_truth);
+  }
+
+  hiperlab_rostools::simulator_truth GazeboRosInterface::GetCurrentTruth() {
+    math::Pose current_pose = this->model->GetWorldPose();
+
+    hiperlab_rostools::simulator_truth current_truth;
+    current_truth.posx = current_pose.pos.x;
+    current_truth.posy = current_pose.pos.y;
+    current_truth.posz = current_pose.pos.z;
+
+    //FIXME: check if q0 is x or w in Quaternion. see http://osrf-distributions.s3.amazonaws.com/gazebo/api/7.1.0/classgazebo_1_1math_1_1Quaternion.html
+    current_truth.attq0 = current_pose.rot.x;
+    current_truth.attq1 = current_pose.rot.y;
+    current_truth.attq2 = current_pose.rot.z;
+    current_truth.attq3 = current_pose.rot.w;
+
+    //FIXME: double check this one also x, y, z = roll, pitch, yaw?
+    math::Vector3 quatToEuler = current_pose.rot.GetAsEuler();
+    current_truth.attroll = quatToEuler.x;
+    current_truth.attpitch = quatToEuler.y;
+    current_truth.attyaw = quatToEuler.z;
+
+    math::Vector3 current_lin_vel = this->model->GetWorldLinearVel();
+    current_truth.velx = current_lin_vel.x;
+    current_truth.vely = current_lin_vel.y;
+    current_truth.velz = current_lin_vel.z;
+
+    math::Vector3 current_ang_vel = this->model->GetWorldAngularVel();
+    current_truth.angvelx = current_ang_vel.x;
+    current_truth.angvely = current_ang_vel.y;
+    current_truth.angvelz = current_ang_vel.z;
+
+    //FIXME: Handle vehicleID
+    current_truth.vehicleID = 5;
+    return current_truth;
   }
 
   void GazeboRosInterface::TmpCallback(const std_msgs::Float32ConstPtr &_msg) {
