@@ -207,6 +207,9 @@ include_directories(include ${catkin_INCLUDE_DIRS}  ${GAZEBO_INCLUDE_DIRS} ${SDF
 # FOR GAZEBO PLUGINS
 add_library(gazebo_ros_interface src/gazebo_ros_interface.cpp)
 target_link_libraries(gazebo_ros_interface ${GAZEBO_LIBRARIES})
+add_library(gazebo_motor_plugin src/gazebo_motor_plugin.cpp)
+target_link_libraries(gazebo_motor_plugin ${GAZEBO_LIBRARIES})
+
 
 # FOR ROS NODES
 # add_executable(gazebo_ros_interface src/gazebo_ros_interface.cpp)

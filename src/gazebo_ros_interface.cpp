@@ -3,15 +3,19 @@
 
 #include <gazebo_ros_interface.h>
 
+//FIXME: Handle simulation time and ROS publishing rate?
+
 namespace gazebo {
   //Line is necessary for all Gazebo Plugins
   GZ_REGISTER_MODEL_PLUGIN(GazeboRosInterface);
 
   void GazeboRosInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
-    model = _model;
+    this->model = _model;
 
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
         boost::bind(&GazeboRosInterface::OnUpdate, this, _1));
+
+    //GAZEBO PUBLISHERS
 
     //initialize ROS
     if (!ros::isInitialized()) {
@@ -21,7 +25,7 @@ namespace gazebo {
     }
     this->nh.reset(new ros::NodeHandle("gazebo_client"));
 
-    //ROS Subscriber FIXME: std_msgs::Float32 will change
+    //ROS SUBSCRIBERS FIXME: std_msgs::Float32 will change to an array for actuator values
     ros::SubscribeOptions so = ros::SubscribeOptions::create<std_msgs::Float32>(
       "/" + this->model->GetName() + "/rotors_motor_speed",
       1,
@@ -29,9 +33,9 @@ namespace gazebo {
       ros::VoidPtr(), &this->rosQueue);
     this->rosSub = this->nh->subscribe(so);
 
-    //publisher
+    //ROS PUBLISHERS
     this->simulator_truth_pub = this->nh->advertise<hiperlab_rostools::simulator_truth>(
-      "/" + this->model->GetName() + "simulator_truth",
+      "/" + this->model->GetName() + "/simulator_truth",
       1);
 
     //handle ROS multi-threading

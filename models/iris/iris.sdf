@@ -351,5 +351,17 @@
     </joint>
     <plugin name='ros_interface' filename='libgazebo_ros_interface.so'>
     </plugin>
+    <plugin name='rotor_0_motor' filename='libgazebo_motor_plugin.so'>
+      <jointName>rotor_0_joint</jointName>
+    </plugin>
+    <plugin name='rotor_1_motor' filename='libgazebo_motor_plugin.so'>
+      <jointName>rotor_1_joint</jointName>
+    </plugin>
+    <plugin name='rotor_2_motor' filename='libgazebo_motor_plugin.so'>
+      <jointName>rotor_2_joint</jointName>
+    </plugin>
+    <plugin name='rotor_3_motor' filename='libgazebo_motor_plugin.so'>
+      <jointName>rotor_3_joint</jointName>
+    </plugin>
   </model>
 </sdf>
