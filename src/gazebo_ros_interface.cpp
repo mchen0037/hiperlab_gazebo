@@ -1,5 +1,8 @@
-//By Mighty Chen 6/29/18
-//mchen73@ucmerced.edu
+/*  The bridge to communicate beween several Gazebo plugins and ROS msgs.
+
+    Created By Mighty Chen 6/29/18
+    mchen73@ucmerced.edu
+*/
 
 #include <gazebo_ros_interface.h>
 
@@ -12,10 +15,31 @@ namespace gazebo {
   void GazeboRosInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     this->model = _model;
 
+    if (_sdf->HasElement("numberOfRotors")) {
+      this->number_of_rotors = _sdf->Get<int>("numberOfRotors");
+    } else {
+      std::cout << "Please specify the number of rotors in the SDF file." << std::endl;
+      return;
+    }
+
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
         boost::bind(&GazeboRosInterface::OnUpdate, this, _1));
 
     //GAZEBO PUBLISHERS
+    gazebo::transport::NodePtr gzNode(new gazebo::transport::Node());
+    gzNode->Init();
+
+    //FIXME: There's 5 joints because the IMU is one of them. add a SDF element.
+    //Assuming that this is the topic name for the rotors.
+
+    for (int i = 0; i < this->number_of_rotors; ++i) {
+      std::string jointName = "rotor_" + std::to_string(i) + "_joint";
+      std::string topicName = "~/" + this->model->GetName() + "/" +
+        jointName + "/motor_velocity";
+      list_of_rotors.push_back(this->model->GetJoint(jointName));
+      rotors_publishers.insert(std::pair<std::string, transport::PublisherPtr>
+        (topicName, gzNode->Advertise<msgs::Vector3d>(topicName)));
+    }
 
     //initialize ROS
     if (!ros::isInitialized()) {
@@ -46,6 +70,17 @@ namespace gazebo {
   void GazeboRosInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
     hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
     this->simulator_truth_pub.publish(current_truth);
+
+    for (std::map<std::string, transport::PublisherPtr>::iterator i =
+       rotors_publishers.begin();
+       i != rotors_publishers.end(); ++i) {
+         // std::cout << i->first << std::endl;
+         transport::PublisherPtr rotor_pub = i->second;
+         //FIXME: Make this send meaningful data lol
+         gazebo::msgs::Vector3d msg;
+         gazebo::msgs::Set(&msg, ignition::math::Vector3d(1, 0, 0));
+         rotor_pub->Publish(msg);
+    }
   }
 
   hiperlab_rostools::simulator_truth GazeboRosInterface::GetCurrentTruth() {

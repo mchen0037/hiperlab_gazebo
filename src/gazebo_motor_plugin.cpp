@@ -46,7 +46,8 @@ namespace gazebo{
 
   //FIXME: Once you recieve a velocity msg, calculate force and apply the force.
   void GazeboMotorPlugin::velocity_gz_callback(ConstVector3dPtr &_msg) {
-    std::cout << this->joint_name << " should spin at " << _msg->x() << std::endl;
+    // std::cout << this->joint_name << " should spin at " << _msg->x() << std::endl;
+    this->joint->SetVelocity(0, _msg->x());
   }
 
 }

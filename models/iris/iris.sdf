@@ -350,6 +350,7 @@
       </axis>
     </joint>
     <plugin name='ros_interface' filename='libgazebo_ros_interface.so'>
+      <numberOfRotors>4</numberOfRotors>
     </plugin>
     <plugin name='rotor_0_motor' filename='libgazebo_motor_plugin.so'>
       <jointName>rotor_0_joint</jointName>
