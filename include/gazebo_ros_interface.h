@@ -12,8 +12,12 @@
 #include "ros/subscribe_options.h"
 #include "std_msgs/Float32.h"
 #include "hiperlab_rostools/simulator_truth.h"
+#include "hiperlab_rostools/telemetry.h"
+
+#include <Imu.pb.h>
 
 namespace gazebo {
+typedef const boost::shared_ptr<const sensor_msgs::msgs::Imu> ImuPtr;
 
 class GazeboRosInterface : public ModelPlugin {
 public:
@@ -32,10 +36,13 @@ private:
   event::ConnectionPtr updateConnection_;
 
   //Gazebo Transport Stuff
-  // gazebo::transport::NodePtr gzNode;
+  transport::NodePtr gzNode;
   std::map<std::string, transport::PublisherPtr> rotors_publishers;
   std::vector<gazebo::transport::PublisherPtr> rotors_speed_pub;
 
+  //Gazebo Subscribers
+  transport::SubscriberPtr imu_gz_sub;
+  void ImuCallback(ImuPtr &msg);
 
   //ROS Stuff
   ros::CallbackQueue rosQueue;
@@ -45,6 +52,9 @@ private:
 
   ros::Subscriber rosSub;
   void TmpCallback(const std_msgs::Float32ConstPtr &_msg);
+
+  ros::Publisher telem_pub;
+  hiperlab_rostools::telemetry GetCurrentTelemetry();
 
   ros::Publisher simulator_truth_pub;
   hiperlab_rostools::simulator_truth GetCurrentTruth();

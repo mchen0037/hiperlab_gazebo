@@ -15,23 +15,24 @@ namespace gazebo {
   void GazeboRosInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     this->model = _model;
 
-    if (_sdf->HasElement("numberOfRotors")) {
-      this->number_of_rotors = _sdf->Get<int>("numberOfRotors");
-    } else {
-      std::cout << "Please specify the number of rotors in the SDF file." << std::endl;
-      return;
-    }
+    this->number_of_rotors = _sdf->HasElement("numberOfRotors") ?
+      _sdf->Get<int>("numberOfRotors") : 4;
 
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
         boost::bind(&GazeboRosInterface::OnUpdate, this, _1));
 
-    //GAZEBO PUBLISHERS
+    //GAZEBO TRANSPORTATION SYSTEM
     gazebo::transport::NodePtr gzNode(new gazebo::transport::Node());
-    gzNode->Init();
+    this->gzNode->Init();
 
-    //FIXME: There's 5 joints because the IMU is one of them. add a SDF element.
-    //Assuming that this is the topic name for the rotors.
+    //Gazebo Subscribers: Imu Plugin, etc.
+    std::string imuTopicName = "~/" + this->model->GetName() + "cmd_vel";
+    this->imu_gz_sub = this->gzNode->Subscribe(
+      imuTopicName, &GazeboRosInterface::ImuCallback, this);
 
+
+    //Gazebo Publishers stored in a map
+    //Assuming that rotor_#_joint is the name for the rotors.
     for (int i = 0; i < this->number_of_rotors; ++i) {
       std::string jointName = "rotor_" + std::to_string(i) + "_joint";
       std::string topicName = "~/" + this->model->GetName() + "/" +
@@ -61,6 +62,9 @@ namespace gazebo {
     this->simulator_truth_pub = this->nh->advertise<hiperlab_rostools::simulator_truth>(
       "/" + this->model->GetName() + "/simulator_truth",
       1);
+    this->telem_pub = this->nh->advertise<hiperlab_rostools::telemetry>(
+      "/" + this->model->GetName() + "/telemetry", //FIXME: handle vehicle ID
+      1);
 
     //handle ROS multi-threading
     this->rosQueueThread = std::thread(std::bind(&GazeboRosInterface::QueueThread, this));
@@ -69,18 +73,32 @@ namespace gazebo {
 
   void GazeboRosInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
     hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
-    this->simulator_truth_pub.publish(current_truth);
+    hiperlab_rostools::telemetry current_telemetry = GetCurrentTelemetry();
 
+    this->simulator_truth_pub.publish(current_truth);
+    this->telem_pub.publish(current_telemetry);
+
+    //Gazebo Publishers for the motor velocities, publish individualvalues to each rotor plugin
     for (std::map<std::string, transport::PublisherPtr>::iterator i =
        rotors_publishers.begin();
        i != rotors_publishers.end(); ++i) {
-         // std::cout << i->first << std::endl;
+         //i->first is the name of the joint, i->second is the publisher
          transport::PublisherPtr rotor_pub = i->second;
          //FIXME: Make this send meaningful data lol
          gazebo::msgs::Vector3d msg;
          gazebo::msgs::Set(&msg, ignition::math::Vector3d(1, 0, 0));
          rotor_pub->Publish(msg);
     }
+  }
+
+  hiperlab_rostools::telemetry GetCurrentTelemetry() {
+    //FIXME: Make a global value for current_telem that subscribes to
+    //an IMU plugin.
+  }
+
+  void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
+    //FIXME: Write the plugin first
+    std::cout << "Hello from ImuCallback!" << std::endl;
   }
 
   hiperlab_rostools::simulator_truth GazeboRosInterface::GetCurrentTruth() {
