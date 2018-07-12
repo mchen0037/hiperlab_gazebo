@@ -13,22 +13,26 @@ namespace gazebo {
   GZ_REGISTER_MODEL_PLUGIN(GazeboRosInterface);
 
   void GazeboRosInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
+    std::cout << "HELLO WORLD" << std::endl;
     this->model = _model;
 
     this->number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
 
+    std::cout << "0" << std::endl;
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
         boost::bind(&GazeboRosInterface::OnUpdate, this, _1));
 
+    std::cout << "1" << std::endl;
     //GAZEBO TRANSPORTATION SYSTEM
     gazebo::transport::NodePtr gzNode(new gazebo::transport::Node());
+    std::cout << "1.5" << std::endl;
     this->gzNode->Init();
-
+    std::cout << "2" << std::endl;
     //Gazebo Subscribers: Imu Plugin, etc.
-    std::string imuTopicName = "~/" + this->model->GetName() + "cmd_vel";
-    this->imu_gz_sub = this->gzNode->Subscribe(
-      imuTopicName, &GazeboRosInterface::ImuCallback, this);
+    // std::string imuTopicName = "~/" + this->model->GetName() + "cmd_vel";
+    // this->imu_gz_sub = this->gzNode->Subscribe(
+    //   imuTopicName, &GazeboRosInterface::ImuCallback, this);
 
 
     //Gazebo Publishers stored in a map
@@ -41,7 +45,7 @@ namespace gazebo {
       rotors_publishers.insert(std::pair<std::string, transport::PublisherPtr>
         (topicName, gzNode->Advertise<msgs::Vector3d>(topicName)));
     }
-
+    std::cout << "3" << std::endl;
     //initialize ROS
     if (!ros::isInitialized()) {
       int argc = 0;
@@ -65,6 +69,9 @@ namespace gazebo {
     this->telem_pub = this->nh->advertise<hiperlab_rostools::telemetry>(
       "/" + this->model->GetName() + "/telemetry", //FIXME: handle vehicle ID
       1);
+    this->mocap_output_pub = this->nh->advertise<hiperlab_rostools::mocap_output>(
+      "/mocap_output5", //FIXME: handle vehicle ID
+      1);
 
     //handle ROS multi-threading
     this->rosQueueThread = std::thread(std::bind(&GazeboRosInterface::QueueThread, this));
@@ -74,9 +81,11 @@ namespace gazebo {
   void GazeboRosInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
     hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
     hiperlab_rostools::telemetry current_telemetry = GetCurrentTelemetry();
+    hiperlab_rostools::mocap_output current_mocap = GetCurrentMocap();
 
     this->simulator_truth_pub.publish(current_truth);
     this->telem_pub.publish(current_telemetry);
+    this->mocap_output_pub.publish(current_mocap);
 
     //Gazebo Publishers for the motor velocities, publish individualvalues to each rotor plugin
     for (std::map<std::string, transport::PublisherPtr>::iterator i =
@@ -91,15 +100,39 @@ namespace gazebo {
     }
   }
 
+  hiperlab_rostools::mocap_output GazeboRosInterface::GetCurrentMocap() {
+    hiperlab_rostools::mocap_output msg;
+    //TODO: noise? mocap system?
+    math::Pose current_pose = this->model->GetWorldPose();
+
+    msg.vehicleID = 5; //FIXME: handle vehicle id
+
+    msg.posx = current_pose.pos.x;
+    msg.posy = current_pose.pos.y;
+    msg.posz = current_pose.pos.z;
+
+    msg.attq0 = current_pose.rot.x;
+    msg.attq1 = current_pose.rot.y;
+    msg.attq2 = current_pose.rot.z;
+    msg.attq3 = current_pose.rot.w;
+
+    math::Vector3 quatToEuler = current_pose.rot.GetAsEuler();
+    msg.attroll = quatToEuler.x;
+    msg.attpitch = quatToEuler.y;
+    msg.attyaw = quatToEuler.z;
+
+    return msg;
+  }
+
   hiperlab_rostools::telemetry GetCurrentTelemetry() {
     //FIXME: Make a global value for current_telem that subscribes to
     //an IMU plugin.
   }
 
-  void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
-    //FIXME: Write the plugin first
-    std::cout << "Hello from ImuCallback!" << std::endl;
-  }
+  // void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
+  //   //FIXME: Write the plugin first
+  //   std::cout << "Hello from ImuCallback!" << std::endl;
+  // }
 
   hiperlab_rostools::simulator_truth GazeboRosInterface::GetCurrentTruth() {
     math::Pose current_pose = this->model->GetWorldPose();
