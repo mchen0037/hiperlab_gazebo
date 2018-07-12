@@ -27,7 +27,7 @@ namespace gazebo {
     //GAZEBO TRANSPORTATION SYSTEM
     gazebo::transport::NodePtr gzNode(new gazebo::transport::Node());
     std::cout << "1.5" << std::endl;
-    this->gzNode->Init();
+    gzNode->Init();
     std::cout << "2" << std::endl;
     //Gazebo Subscribers: Imu Plugin, etc.
     // std::string imuTopicName = "~/" + this->model->GetName() + "cmd_vel";
@@ -124,9 +124,11 @@ namespace gazebo {
     return msg;
   }
 
-  hiperlab_rostools::telemetry GetCurrentTelemetry() {
+  hiperlab_rostools::telemetry GazeboRosInterface::GetCurrentTelemetry() {
     //FIXME: Make a global value for current_telem that subscribes to
     //an IMU plugin.
+    hiperlab_rostools::telemetry msg;
+    return msg;
   }
 
   // void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
