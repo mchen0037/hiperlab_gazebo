@@ -19,28 +19,10 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
 )
 
-
 catkin_package(
   DEPENDS
     gazebo_ros
-#  INCLUDE_DIRS include
-#  LIBRARIES hiperlab_gazebo
-#  CATKIN_DEPENDS gazebo_plugins gazebo_ros hiperlab_common hiperlab_components hiperlab_hardware hiperlab_rostools roscpp rospy
 )
-
-# Protobuf Stuff
-FIND_PACKAGE( Boost 1.40 COMPONENTS system REQUIRED)
-include (FindPkgConfig)
-if (PKG_CONFIG_FOUND)
-  pkg_check_modules(GAZEBO gazebo)
-  pkg_check_modules(SDF sdformat)
-endif()
-include_directories(
-  ${GAZEBO_INCLUDE_DIRS}
-  ${SDF_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}/msgs
-  )
-link_directories(${GAZEBO_LIBRARY_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/msgs)
 add_subdirectory(msgs)
 
 find_package(gazebo REQUIRED)
