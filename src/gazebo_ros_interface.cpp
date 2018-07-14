@@ -19,16 +19,14 @@ namespace gazebo {
     this->number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
 
-    std::cout << "0" << std::endl;
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
         boost::bind(&GazeboRosInterface::OnUpdate, this, _1));
 
-    std::cout << "1" << std::endl;
     //GAZEBO TRANSPORTATION SYSTEM
     gazebo::transport::NodePtr gzNode(new gazebo::transport::Node());
-    std::cout << "1.5" << std::endl;
+    //for some reason using this->gzNode will break the code.
     gzNode->Init();
-    std::cout << "2" << std::endl;
+
     //Gazebo Subscribers: Imu Plugin, etc.
     // std::string imuTopicName = "~/" + this->model->GetName() + "cmd_vel";
     // this->imu_gz_sub = this->gzNode->Subscribe(
@@ -45,7 +43,7 @@ namespace gazebo {
       rotors_publishers.insert(std::pair<std::string, transport::PublisherPtr>
         (topicName, gzNode->Advertise<msgs::Vector3d>(topicName)));
     }
-    std::cout << "3" << std::endl;
+
     //initialize ROS
     if (!ros::isInitialized()) {
       int argc = 0;
@@ -58,7 +56,7 @@ namespace gazebo {
     ros::SubscribeOptions so = ros::SubscribeOptions::create<std_msgs::Float32>(
       "/" + this->model->GetName() + "/rotors_motor_speed",
       1,
-      boost::bind(&GazeboRosInterface::TmpCallback, this, _1),
+      boost::bind(&GazeboRosInterface::RotorsMotorSpeedCallback, this, _1),
       ros::VoidPtr(), &this->rosQueue);
     this->rosSub = this->nh->subscribe(so);
 
@@ -171,7 +169,7 @@ namespace gazebo {
     return current_truth;
   }
 
-  void GazeboRosInterface::TmpCallback(const std_msgs::Float32ConstPtr &_msg) {
+  void GazeboRosInterface::RotorsMotorSpeedCallback(const std_msgs::Float32ConstPtr &_msg) {
     std::cout << _msg->data << std::endl;
   }
 

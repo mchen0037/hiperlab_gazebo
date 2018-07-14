@@ -52,7 +52,8 @@ private:
   void QueueThread();
 
   ros::Subscriber rosSub;
-  void TmpCallback(const std_msgs::Float32ConstPtr &_msg);
+  //Grab all 4 values from ROS, and send individual values to each rotor.
+  void RotorsMotorSpeedCallback(const std_msgs::Float32ConstPtr &_msg);
 
   ros::Publisher telem_pub;
   hiperlab_rostools::telemetry GetCurrentTelemetry();
