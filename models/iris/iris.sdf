@@ -352,17 +352,91 @@
     <plugin name='ros_interface' filename='libgazebo_ros_interface.so'>
       <numberOfRotors>4</numberOfRotors>
     </plugin>
-    <plugin name='rotor_0_motor' filename='libgazebo_motor_plugin.so'>
+    <plugin name='rosbag' filename='libgazebo_multirotor_base_plugin.so'>
+      <robotNamespace/>
+      <linkName>base_link</linkName>
+      <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
+    </plugin>
+    <plugin name='front_right_motor_model' filename='libgazebo_motor_model.so'>
+      <robotNamespace/>
       <jointName>rotor_0_joint</jointName>
+      <linkName>rotor_0</linkName>
+      <turningDirection>ccw</turningDirection>
+      <timeConstantUp>0.0125</timeConstantUp>
+      <timeConstantDown>0.025</timeConstantDown>
+      <maxRotVelocity>1100</maxRotVelocity>
+      <motorConstant>8.54858e-06</motorConstant>
+      <momentConstant>0.06</momentConstant>
+      <commandSubTopic>/gazebo/command/motor_speed</commandSubTopic>
+      <motorNumber>0</motorNumber>
+      <rotorDragCoefficient>0.000806428</rotorDragCoefficient>
+      <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+      <motorSpeedPubTopic>/motor_speed/0</motorSpeedPubTopic>
+      <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
     </plugin>
-    <plugin name='rotor_1_motor' filename='libgazebo_motor_plugin.so'>
+    <plugin name='back_left_motor_model' filename='libgazebo_motor_model.so'>
+      <robotNamespace/>
       <jointName>rotor_1_joint</jointName>
+      <linkName>rotor_1</linkName>
+      <turningDirection>ccw</turningDirection>
+      <timeConstantUp>0.0125</timeConstantUp>
+      <timeConstantDown>0.025</timeConstantDown>
+      <maxRotVelocity>1100</maxRotVelocity>
+      <motorConstant>8.54858e-06</motorConstant>
+      <momentConstant>0.06</momentConstant>
+      <commandSubTopic>/gazebo/command/motor_speed</commandSubTopic>
+      <motorNumber>1</motorNumber>
+      <rotorDragCoefficient>0.000806428</rotorDragCoefficient>
+      <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+      <motorSpeedPubTopic>/motor_speed/1</motorSpeedPubTopic>
+      <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
     </plugin>
-    <plugin name='rotor_2_motor' filename='libgazebo_motor_plugin.so'>
+    <plugin name='front_left_motor_model' filename='libgazebo_motor_model.so'>
+      <robotNamespace/>
       <jointName>rotor_2_joint</jointName>
+      <linkName>rotor_2</linkName>
+      <turningDirection>cw</turningDirection>
+      <timeConstantUp>0.0125</timeConstantUp>
+      <timeConstantDown>0.025</timeConstantDown>
+      <maxRotVelocity>1100</maxRotVelocity>
+      <motorConstant>8.54858e-06</motorConstant>
+      <momentConstant>0.06</momentConstant>
+      <commandSubTopic>/gazebo/command/motor_speed</commandSubTopic>
+      <motorNumber>2</motorNumber>
+      <rotorDragCoefficient>0.000806428</rotorDragCoefficient>
+      <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+      <motorSpeedPubTopic>/motor_speed/2</motorSpeedPubTopic>
+      <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
     </plugin>
-    <plugin name='rotor_3_motor' filename='libgazebo_motor_plugin.so'>
+    <plugin name='back_right_motor_model' filename='libgazebo_motor_model.so'>
+      <robotNamespace/>
       <jointName>rotor_3_joint</jointName>
+      <linkName>rotor_3</linkName>
+      <turningDirection>cw</turningDirection>
+      <timeConstantUp>0.0125</timeConstantUp>
+      <timeConstantDown>0.025</timeConstantDown>
+      <maxRotVelocity>1100</maxRotVelocity>
+      <motorConstant>8.54858e-06</motorConstant>
+      <momentConstant>0.06</momentConstant>
+      <commandSubTopic>/gazebo/command/motor_speed</commandSubTopic>
+      <motorNumber>3</motorNumber>
+      <rotorDragCoefficient>0.000806428</rotorDragCoefficient>
+      <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+      <motorSpeedPubTopic>/motor_speed/3</motorSpeedPubTopic>
+      <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
+    </plugin>
+    <plugin name='rotors_gazebo_imu_plugin' filename='libgazebo_imu_plugin.so'>
+      <robotNamespace/>
+      <linkName>/imu_link</linkName>
+      <imuTopic>/imu</imuTopic>
+      <gyroscopeNoiseDensity>0.0003394</gyroscopeNoiseDensity>
+      <gyroscopeRandomWalk>3.8785e-05</gyroscopeRandomWalk>
+      <gyroscopeBiasCorrelationTime>1000.0</gyroscopeBiasCorrelationTime>
+      <gyroscopeTurnOnBiasSigma>0.0087</gyroscopeTurnOnBiasSigma>
+      <accelerometerNoiseDensity>0.004</accelerometerNoiseDensity>
+      <accelerometerRandomWalk>0.006</accelerometerRandomWalk>
+      <accelerometerBiasCorrelationTime>300.0</accelerometerBiasCorrelationTime>
+      <accelerometerTurnOnBiasSigma>0.196</accelerometerTurnOnBiasSigma>
     </plugin>
   </model>
 </sdf>
