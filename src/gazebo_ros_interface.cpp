@@ -32,7 +32,6 @@ namespace gazebo {
     imu_gz_sub = gzNode->Subscribe(
       imuTopicName, &GazeboRosInterface::ImuCallback, this);
 
-
     //Gazebo Publishers stored in a map
     //Assuming that rotor_#_joint is the name for the rotors.
     for (int i = 0; i < number_of_rotors; ++i) {
@@ -130,8 +129,21 @@ namespace gazebo {
   }
 
   void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
-    //FIXME: Write the plugin first
-    std::cout << "Hello from ImuCallback!" << std::endl;
+    msgs::Quaternion imu_msg_orientation = msg->orientation();
+    math::Quaternion imu_orientation = gazebo::msgs::ConvertIgn(
+      imu_msg_orientation);
+    math::Vector3 quatToEuler = imu_orientation.GetAsEuler();
+    current_telemetry.attitude[0] = quatToEuler.x;
+    current_telemetry.attitude[1] = quatToEuler.y;
+    current_telemetry.attitude[2] = quatToEuler.z;
+
+    msgs::Vector3d imu_msg_lin_accel = msg->linear_acceleration();
+    math::Vector3 imu_lin_accel = gazebo::msgs::ConvertIgn(
+      imu_msg_lin_accel);
+    current_telemetry.accelerometer[0] = imu_lin_accel.x;
+    current_telemetry.accelerometer[1] = imu_lin_accel.y;
+    current_telemetry.accelerometer[2] = imu_lin_accel.z;
+
   }
 
   hiperlab_rostools::simulator_truth GazeboRosInterface::GetCurrentTruth() {

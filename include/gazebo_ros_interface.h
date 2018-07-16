@@ -63,6 +63,7 @@ private:
 
   ros::Publisher telem_pub;
   hiperlab_rostools::telemetry GetCurrentTelemetry();
+  hiperlab_rostools::telemetry current_telemetry;
 
   ros::Publisher simulator_truth_pub;
   hiperlab_rostools::simulator_truth GetCurrentTruth();
