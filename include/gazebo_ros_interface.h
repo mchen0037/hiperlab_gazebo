@@ -20,11 +20,13 @@
 
 //From Protobuf
 #include "Imu.pb.h"
+#include "CommandMotorSpeed.pb.h"
 
 
 
 namespace gazebo {
 typedef const boost::shared_ptr<const sensor_msgs::msgs::Imu> ImuPtr;
+typedef const boost::shared_ptr<const mav_msgs::msgs::CommandMotorSpeed> CommandMotorSpeedPtr;
 
 class GazeboRosInterface : public ModelPlugin {
 public:
@@ -44,8 +46,11 @@ private:
 
   //Gazebo Transport Stuff
   transport::NodePtr gzNode;
-  std::map<std::string, transport::PublisherPtr> rotors_publishers;
-  std::vector<gazebo::transport::PublisherPtr> rotors_speed_pub;
+  transport::PublisherPtr cmd_motor_speed_pub;
+
+  //this was cool but kind of pointless now
+  // std::map<std::string, transport::PublisherPtr> rotors_publishers;
+  // std::vector<gazebo::transport::PublisherPtr> rotors_speed_pub;
 
   //Gazebo Subscribers
   transport::SubscriberPtr imu_gz_sub;

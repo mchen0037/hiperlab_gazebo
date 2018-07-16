@@ -28,20 +28,14 @@ namespace gazebo {
     gzNode->Init();
 
     // Gazebo Subscribers: Imu Plugin, etc.
-    std::string imuTopicName = "~/" + model->GetName() + "imu";
+    std::string imuTopicName = "~/" + model->GetName() + "/imu";
+    std::string cmd_motor_speed_topic_name = "~/" + model->GetName() +
+      "/gazebo/command/motor_speed";
+
     imu_gz_sub = gzNode->Subscribe(
       imuTopicName, &GazeboRosInterface::ImuCallback, this);
-
-    //Gazebo Publishers stored in a map
-    //Assuming that rotor_#_joint is the name for the rotors.
-    for (int i = 0; i < number_of_rotors; ++i) {
-      std::string jointName = "rotor_" + std::to_string(i) + "_joint";
-      std::string topicName = "~/" + model->GetName() + "/" +
-        jointName + "/motor_velocity";
-      list_of_rotors.push_back(model->GetJoint(jointName));
-      rotors_publishers.insert(std::pair<std::string, transport::PublisherPtr>
-        (topicName, gzNode->Advertise<msgs::Vector3d>(topicName)));
-    }
+    gzNode->Advertise<mav_msgs::msgs::CommandMotorSpeed>
+      (cmd_motor_speed_topic_name, 1);
 
     //initialize ROS
     if (!ros::isInitialized()) {
@@ -84,17 +78,6 @@ namespace gazebo {
     this->telem_pub.publish(current_telemetry);
     this->mocap_output_pub.publish(current_mocap);
 
-    //Gazebo Publishers for the motor velocities, publish individualvalues to each rotor plugin
-    for (std::map<std::string, transport::PublisherPtr>::iterator i =
-       rotors_publishers.begin();
-       i != rotors_publishers.end(); ++i) {
-         //i->first is the name of the joint, i->second is the publisher
-         transport::PublisherPtr rotor_pub = i->second;
-         //FIXME: Make this send meaningful data lol
-         gazebo::msgs::Vector3d msg;
-         gazebo::msgs::Set(&msg, ignition::math::Vector3d(1, 0, 0));
-         rotor_pub->Publish(msg);
-    }
   }
 
   hiperlab_rostools::mocap_output GazeboRosInterface::GetCurrentMocap() {
@@ -121,13 +104,6 @@ namespace gazebo {
     return msg;
   }
 
-  hiperlab_rostools::telemetry GazeboRosInterface::GetCurrentTelemetry() {
-    //FIXME: Make a global value for current_telem that subscribes to
-    //an IMU plugin.
-    hiperlab_rostools::telemetry msg;
-    return msg;
-  }
-
   void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
     msgs::Quaternion imu_msg_orientation = msg->orientation();
     math::Quaternion imu_orientation = gazebo::msgs::ConvertIgn(
@@ -143,7 +119,11 @@ namespace gazebo {
     current_telemetry.accelerometer[0] = imu_lin_accel.x;
     current_telemetry.accelerometer[1] = imu_lin_accel.y;
     current_telemetry.accelerometer[2] = imu_lin_accel.z;
+  }
 
+  hiperlab_rostools::telemetry GazeboRosInterface::GetCurrentTelemetry() {
+
+    return current_telemetry;
   }
 
   hiperlab_rostools::simulator_truth GazeboRosInterface::GetCurrentTruth() {
