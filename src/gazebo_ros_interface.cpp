@@ -13,10 +13,10 @@ namespace gazebo {
   GZ_REGISTER_MODEL_PLUGIN(GazeboRosInterface);
 
   void GazeboRosInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
-    std::cout << "HELLO WORLD" << std::endl;
-    this->model = _model;
+    std::cout << ">>>>>>> gazebo_ros_interface successfully loaded <<<<" << std::endl;
+    model = _model;
 
-    this->number_of_rotors = _sdf->HasElement("numberOfRotors") ?
+    number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
 
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
@@ -27,19 +27,19 @@ namespace gazebo {
     //for some reason using this->gzNode will break the code.
     gzNode->Init();
 
-    //Gazebo Subscribers: Imu Plugin, etc.
-    // std::string imuTopicName = "~/" + this->model->GetName() + "cmd_vel";
-    // this->imu_gz_sub = this->gzNode->Subscribe(
-    //   imuTopicName, &GazeboRosInterface::ImuCallback, this);
+    // Gazebo Subscribers: Imu Plugin, etc.
+    std::string imuTopicName = "~/" + model->GetName() + "imu";
+    imu_gz_sub = gzNode->Subscribe(
+      imuTopicName, &GazeboRosInterface::ImuCallback, this);
 
 
     //Gazebo Publishers stored in a map
     //Assuming that rotor_#_joint is the name for the rotors.
-    for (int i = 0; i < this->number_of_rotors; ++i) {
+    for (int i = 0; i < number_of_rotors; ++i) {
       std::string jointName = "rotor_" + std::to_string(i) + "_joint";
-      std::string topicName = "~/" + this->model->GetName() + "/" +
+      std::string topicName = "~/" + model->GetName() + "/" +
         jointName + "/motor_velocity";
-      list_of_rotors.push_back(this->model->GetJoint(jointName));
+      list_of_rotors.push_back(model->GetJoint(jointName));
       rotors_publishers.insert(std::pair<std::string, transport::PublisherPtr>
         (topicName, gzNode->Advertise<msgs::Vector3d>(topicName)));
     }
@@ -129,10 +129,10 @@ namespace gazebo {
     return msg;
   }
 
-  // void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
-  //   //FIXME: Write the plugin first
-  //   std::cout << "Hello from ImuCallback!" << std::endl;
-  // }
+  void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
+    //FIXME: Write the plugin first
+    std::cout << "Hello from ImuCallback!" << std::endl;
+  }
 
   hiperlab_rostools::simulator_truth GazeboRosInterface::GetCurrentTruth() {
     math::Pose current_pose = this->model->GetWorldPose();

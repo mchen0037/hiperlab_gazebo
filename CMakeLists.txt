@@ -239,10 +239,10 @@ include_directories(
 ############################################
 ########## FOR GAZEBO PLUGINS ##############
 ############################################
-add_library(gazebo_ros_interface src/gazebo_ros_interface.cpp)
-target_link_libraries(gazebo_ros_interface ${GAZEBO_LIBRARIES})
-add_library(gazebo_motor_plugin src/gazebo_motor_plugin.cpp)
-target_link_libraries(gazebo_motor_plugin ${GAZEBO_LIBRARIES})
+#add_library(gazebo_ros_interface src/gazebo_ros_interface.cpp)
+#target_link_libraries(gazebo_ros_interface ${GAZEBO_LIBRARIES})
+#add_library(gazebo_motor_plugin src/gazebo_motor_plugin.cpp)
+#target_link_libraries(gazebo_motor_plugin ${GAZEBO_LIBRARIES})
 
 #### From PX4/sitl_gazebo
 
@@ -254,13 +254,16 @@ add_library(gazebo_imu_plugin SHARED src/gazebo_imu_plugin.cpp)
 add_library(gazebo_motor_model SHARED src/gazebo_motor_model.cpp)
 add_library(gazebo_multirotor_base_plugin SHARED src/gazebo_multirotor_base_plugin.cpp)
 #add_library(gazebo_wind_plugin SHARED src/gazebo_wind_plugin.cpp)
+add_library(gazebo_ros_interface SHARED src/gazebo_ros_interface.cpp)
 
 set(plugins
   gazebo_imu_plugin
+  gazebo_ros_interface
 #  gazebo_mavlink_interface
   gazebo_motor_model
   gazebo_multirotor_base_plugin
   #gazebo_wind_plugin
+
   )
 
 foreach(plugin ${plugins})

@@ -1,6 +1,9 @@
+#include <iostream>
+
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <iostream>
+#include <gazebo/common/common.hh>
+#include <gazebo/common/Plugin.hh>
 #include <gazebo/transport/transport.hh>
 #include <gazebo/gazebo_client.hh>
 #include <gazebo/msgs/msgs.hh>
@@ -15,10 +18,13 @@
 #include "hiperlab_rostools/telemetry.h"
 #include "hiperlab_rostools/mocap_output.h"
 
-// #include <Imu.pb.h>
+//From Protobuf
+#include "Imu.pb.h"
+
+
 
 namespace gazebo {
-// typedef const boost::shared_ptr<const sensor_msgs::msgs::Imu> ImuPtr;
+typedef const boost::shared_ptr<const sensor_msgs::msgs::Imu> ImuPtr;
 
 class GazeboRosInterface : public ModelPlugin {
 public:
@@ -42,8 +48,8 @@ private:
   std::vector<gazebo::transport::PublisherPtr> rotors_speed_pub;
 
   //Gazebo Subscribers
-  // transport::SubscriberPtr imu_gz_sub;
-  // void ImuCallback(ImuPtr &msg);
+  transport::SubscriberPtr imu_gz_sub;
+  void ImuCallback(ImuPtr& msg);
 
   //ROS Stuff
   ros::CallbackQueue rosQueue;
