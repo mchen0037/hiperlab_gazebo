@@ -56,10 +56,10 @@ namespace gazebo {
 
     //ROS PUBLISHERS
     this->simulator_truth_pub = this->nh->advertise<hiperlab_rostools::simulator_truth>(
-      "/" + this->model->GetName() + "/simulator_truth",
+      "/simulator_truth5",
       1);
     this->telem_pub = this->nh->advertise<hiperlab_rostools::telemetry>(
-      "/" + this->model->GetName() + "/telemetry", //FIXME: handle vehicle ID
+      "/telemetry5", //FIXME: handle vehicle ID
       1);
     this->mocap_output_pub = this->nh->advertise<hiperlab_rostools::mocap_output>(
       "/mocap_output5", //FIXME: handle vehicle ID
