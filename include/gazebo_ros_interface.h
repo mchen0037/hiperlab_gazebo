@@ -1,4 +1,8 @@
 #include <iostream>
+#include <memory>
+#include <mutex>
+#include <Eigen/Dense>
+#include <fstream>
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
@@ -17,6 +21,15 @@
 #include "hiperlab_rostools/simulator_truth.h"
 #include "hiperlab_rostools/telemetry.h"
 #include "hiperlab_rostools/mocap_output.h"
+#include "hiperlab_rostools/radio_command.h"
+
+#include "Common/Time/ManualTimer.hpp"
+#include "Common/Time/HardwareTimer.hpp"
+#include "Components/Simulation/Quadcopter_T.hpp"
+#include "Components/Simulation/CommunicationsDelay.hpp"
+
+#include "hiperlab_rostools/mocap_output.h"
+#include "hiperlab_rostools/simulator_truth.h"
 
 //From Protobuf
 #include "Imu.pb.h"
@@ -37,6 +50,7 @@ protected:
   void OnUpdate(const common::UpdateInfo&  /*_info*/);
 
 private:
+  // Simulation::Quadcopter vehicle;
   int number_of_rotors;
   std::vector<gazebo::physics::JointPtr> list_of_rotors;
 
@@ -62,9 +76,8 @@ private:
   std::unique_ptr<ros::NodeHandle> nh;
   void QueueThread();
 
-  ros::Subscriber rosSub;
-  //Grab all 4 values from ROS, and send individual values to each rotor.
-  void RotorsMotorSpeedCallback(const std_msgs::Float32ConstPtr &_msg);
+  ros::Subscriber sub_radio_cmd;
+  void RadioCmdCallback(const hiperlab_rostools::radio_command::ConstPtr &msg);
 
   ros::Publisher telem_pub;
   hiperlab_rostools::telemetry GetCurrentTelemetry();

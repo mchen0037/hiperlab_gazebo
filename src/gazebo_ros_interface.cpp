@@ -45,13 +45,14 @@ namespace gazebo {
     }
     this->nh.reset(new ros::NodeHandle("gazebo_client"));
 
-    //ROS SUBSCRIBERS FIXME: std_msgs::Float32 will change to an array for actuator values
-    ros::SubscribeOptions so = ros::SubscribeOptions::create<std_msgs::Float32>(
-      "/" + this->model->GetName() + "/rotors_motor_speed",
-      1,
-      boost::bind(&GazeboRosInterface::RotorsMotorSpeedCallback, this, _1),
-      ros::VoidPtr(), &this->rosQueue);
-    this->rosSub = this->nh->subscribe(so);
+    ros::SubscribeOptions so =
+      ros::SubscribeOptions::create<hiperlab_rostools::radio_command>(
+        "/radio_command5",
+        1,
+        boost::bind(&GazeboRosInterface::RadioCmdCallback, this, _1),
+        ros::VoidPtr(), &this->rosQueue);
+
+    this->sub_radio_cmd = this->nh->subscribe(so);
 
     //ROS PUBLISHERS
     this->simulator_truth_pub = this->nh->advertise<hiperlab_rostools::simulator_truth>(
@@ -77,7 +78,6 @@ namespace gazebo {
     this->simulator_truth_pub.publish(current_truth);
     this->telem_pub.publish(current_telemetry);
     this->mocap_output_pub.publish(current_mocap);
-
   }
 
   hiperlab_rostools::mocap_output GazeboRosInterface::GetCurrentMocap() {
@@ -161,8 +161,8 @@ namespace gazebo {
     return current_truth;
   }
 
-  void GazeboRosInterface::RotorsMotorSpeedCallback(const std_msgs::Float32ConstPtr &_msg) {
-    std::cout << _msg->data << std::endl;
+  void GazeboRosInterface::RadioCmdCallback(const hiperlab_rostools::radio_command::ConstPtr &_msg) {
+    std::cout << "hi" << std::endl;
   }
 
   //Handle ROS multi-threading
