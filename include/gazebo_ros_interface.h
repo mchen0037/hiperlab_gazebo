@@ -17,7 +17,6 @@
 #include "ros/ros.h"
 #include "ros/callback_queue.h"
 #include "ros/subscribe_options.h"
-#include "std_msgs/Float32.h"
 #include "hiperlab_rostools/simulator_truth.h"
 #include "hiperlab_rostools/telemetry.h"
 #include "hiperlab_rostools/mocap_output.h"
@@ -50,6 +49,22 @@ protected:
   void OnUpdate(const common::UpdateInfo&  /*_info*/);
 
 private:
+  //from Simulator/main.cpp
+  struct SimVehicle {
+    struct {
+      std::shared_ptr<
+          Simulation::CommunicationsDelay<
+              RadioTypes::RadioMessageDecoded::RawMessage> > queue;
+    } cmdRadioChannel;
+    int id;
+    std::shared_ptr<Simulation::SimulationObject6DOF> vehicle;
+    int *tmp;
+  };
+
+  std::mutex cmdRadioChannelMutex;  //protect against concurrency problems
+
+  std::shared_ptr<SimVehicle> vehicle;
+
   // Simulation::Quadcopter vehicle;
   int number_of_rotors;
   std::vector<gazebo::physics::JointPtr> list_of_rotors;

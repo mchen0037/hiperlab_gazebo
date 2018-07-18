@@ -16,6 +16,8 @@ namespace gazebo {
     std::cout << ">>>>>>> gazebo_ros_interface successfully loaded <<<<" << std::endl;
     model = _model;
 
+    vehicle.reset(new SimVehicle());
+
     number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
 
@@ -161,8 +163,13 @@ namespace gazebo {
     return current_truth;
   }
 
-  void GazeboRosInterface::RadioCmdCallback(const hiperlab_rostools::radio_command::ConstPtr &_msg) {
-    std::cout << "hi" << std::endl;
+  void GazeboRosInterface::RadioCmdCallback(const hiperlab_rostools::radio_command::ConstPtr &msg) {
+    std::lock_guard<std::mutex> guard(cmdRadioChannelMutex);
+    RadioTypes::RadioMessageDecoded::RawMessage rawMsg;
+    for (int i = 0; i < RadioTypes::RadioMessageDecoded::RAW_PACKET_SIZE; ++i) {
+      rawMsg.raw[i] = msg->raw[i];
+    }
+    vehicle->cmdRadioChannel.queue->AddMessage(rawMsg);
   }
 
   //Handle ROS multi-threading
