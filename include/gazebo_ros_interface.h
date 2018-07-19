@@ -26,6 +26,7 @@
 #include "Common/Time/HardwareTimer.hpp"
 #include "Components/Simulation/Quadcopter_T.hpp"
 #include "Components/Simulation/CommunicationsDelay.hpp"
+#include "Components/Logic/QuadcopterLogic.hpp"
 
 #include "hiperlab_rostools/mocap_output.h"
 #include "hiperlab_rostools/simulator_truth.h"
@@ -33,8 +34,6 @@
 //From Protobuf
 #include "Imu.pb.h"
 #include "CommandMotorSpeed.pb.h"
-
-
 
 namespace gazebo {
 typedef const boost::shared_ptr<const sensor_msgs::msgs::Imu> ImuPtr;
@@ -49,21 +48,19 @@ protected:
   void OnUpdate(const common::UpdateInfo&  /*_info*/);
 
 private:
-  //from Simulator/main.cpp
-  struct SimVehicle {
-    struct {
-      std::shared_ptr<
-          Simulation::CommunicationsDelay<
-              RadioTypes::RadioMessageDecoded::RawMessage> > queue;
-    } cmdRadioChannel;
-    int id;
-    std::shared_ptr<Simulation::SimulationObject6DOF> vehicle;
-    int *tmp;
-  };
+
+  struct {
+    std::shared_ptr<
+        Simulation::CommunicationsDelay<
+            RadioTypes::RadioMessageDecoded::RawMessage> > queue;
+  } cmdRadioChannel;
+
+
+  HardwareTimer simTimer;
+  const double frequencySimulation = 500.0;
+  std::shared_ptr<Onboard::QuadcopterLogic> _logic;
 
   std::mutex cmdRadioChannelMutex;  //protect against concurrency problems
-
-  std::shared_ptr<SimVehicle> vehicle;
 
   // Simulation::Quadcopter vehicle;
   int number_of_rotors;

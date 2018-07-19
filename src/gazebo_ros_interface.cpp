@@ -16,7 +16,7 @@ namespace gazebo {
     std::cout << ">>>>>>> gazebo_ros_interface successfully loaded <<<<" << std::endl;
     model = _model;
 
-    vehicle.reset(new SimVehicle());
+    _logic.reset(new Onboard::QuadcopterLogic(&simTimer, frequencySimulation));
 
     number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
@@ -169,7 +169,7 @@ namespace gazebo {
     for (int i = 0; i < RadioTypes::RadioMessageDecoded::RAW_PACKET_SIZE; ++i) {
       rawMsg.raw[i] = msg->raw[i];
     }
-    vehicle->cmdRadioChannel.queue->AddMessage(rawMsg);
+    cmdRadioChannel.queue->AddMessage(rawMsg);
   }
 
   //Handle ROS multi-threading
