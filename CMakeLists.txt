@@ -267,11 +267,11 @@ set(plugins
   )
 
 foreach(plugin ${plugins})
-  target_link_libraries(${plugin} ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES})
+  target_link_libraries(${plugin} ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
 endforeach()
 
 foreach(plugin ${plugins})
-  add_dependencies(${plugin} mav_msgs nav_msgs std_msgs sensor_msgs)
+  add_dependencies(${plugin} mav_msgs nav_msgs std_msgs sensor_msgs ${catkin_EXPORTED_TARGETS})
 endforeach()
 
 
