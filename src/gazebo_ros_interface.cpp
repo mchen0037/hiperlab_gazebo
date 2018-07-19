@@ -89,9 +89,13 @@ namespace gazebo {
       //TODO: Set Battery Measurements X
 
       //TODO: SetIMUMeasuremenatRateGyro
-      
+      _logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
+                                        current_telemetry.rateGyro[1],
+                                        current_telemetry.rateGyro[2]);
       //TODO: SetIMUMeasurementAccelerometer
-
+      _logic->SetIMUMeasurementAccelerometer(current_telemetry.accelerometer[0],
+                                            current_telemetry.accelerometer[1],
+                                            current_telemetry.accelerometer[2]);
       _logic->Run();
     }
 
