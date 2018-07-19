@@ -90,7 +90,7 @@ namespace gazebo {
       //TODO: Apply speed to motors (publish MotorSpeed.pb commands)
       //Calc Force, Torque, Momentum
       //Calc Ang Acceleration
-      //Calc Drag Force
+      //Calc Drag Force 
     //TODO: Set Battery Measurements X
     //TODO: SetIMUMeasuremenatRateGyro
     //TODO: SetIMUMeasurementAccelerometer
