@@ -86,16 +86,13 @@ namespace gazebo {
     if(_timerOnboardLogic->GetSeconds<double>() > _onboardLogicPeriod) {
       _timerOnboardLogic->AdjustTimeBySeconds(-_onboardLogicPeriod);
 
-    //maybe all of these are handled in motor_model_plugin
-      //TODO: Apply speed to motors (publish MotorSpeed.pb commands)
-      //Calc Force, Torque, Momentum
-      //Calc Ang Acceleration
-      //Calc Drag Force 
-    //TODO: Set Battery Measurements X
-    //TODO: SetIMUMeasuremenatRateGyro
-    //TODO: SetIMUMeasurementAccelerometer
+      //TODO: Set Battery Measurements X
 
-    _logic->Run();
+      //TODO: SetIMUMeasuremenatRateGyro
+      
+      //TODO: SetIMUMeasurementAccelerometer
+
+      _logic->Run();
     }
 
     //for debugging
@@ -153,6 +150,12 @@ namespace gazebo {
     current_telemetry.accelerometer[0] = imu_lin_accel.x;
     current_telemetry.accelerometer[1] = imu_lin_accel.y;
     current_telemetry.accelerometer[2] = imu_lin_accel.z;
+
+    msgs::Vector3d imu_msg_gyro = msg->angular_velocity();
+    math::Vector3 imu_gyro = gazebo::msgs::ConvertIgn(imu_msg_gyro);
+    current_telemetry.rateGyro[0] = imu_gyro.x;
+    current_telemetry.rateGyro[1] = imu_gyro.y;
+    current_telemetry.rateGyro[2] = imu_gyro.z;
   }
 
   hiperlab_rostools::telemetry GazeboRosInterface::GetCurrentTelemetry() {
