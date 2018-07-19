@@ -16,11 +16,15 @@ namespace gazebo {
     std::cout << ">>>>>>> gazebo_ros_interface successfully loaded <<<<" << std::endl;
     model = _model;
 
+    quadcopterType = Onboard::QuadcopterConstants::GetVehicleTypeFromID(5);
     _logic.reset(new Onboard::QuadcopterLogic(&simTimer, frequencySimulation));
+    _logic->Initialise(quadcopterType, 5);
 
     number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
 
+    // Listen to the update event. This event is broadcast every
+    // simulation iteration.
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
         boost::bind(&GazeboRosInterface::OnUpdate, this, _1));
 
@@ -73,6 +77,8 @@ namespace gazebo {
   }
 
   void GazeboRosInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
+    _logic->PrintStatus();
+
     hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
     hiperlab_rostools::telemetry current_telemetry = GetCurrentTelemetry();
     hiperlab_rostools::mocap_output current_mocap = GetCurrentMocap();
@@ -84,7 +90,7 @@ namespace gazebo {
 
   hiperlab_rostools::mocap_output GazeboRosInterface::GetCurrentMocap() {
     hiperlab_rostools::mocap_output msg;
-    //TODO: noise? mocap system?
+    //TODO: noise? mocap system? not simulation truth?
     math::Pose current_pose = this->model->GetWorldPose();
 
     msg.vehicleID = 5; //FIXME: handle vehicle id
@@ -106,6 +112,7 @@ namespace gazebo {
     return msg;
   }
 
+  //Handle IMU Messages from Gazebo Plugin
   void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
     msgs::Quaternion imu_msg_orientation = msg->orientation();
     math::Quaternion imu_orientation = gazebo::msgs::ConvertIgn(
@@ -128,6 +135,7 @@ namespace gazebo {
     return current_telemetry;
   }
 
+  //Convienent function to grab the Current Simulation Truth
   hiperlab_rostools::simulator_truth GazeboRosInterface::GetCurrentTruth() {
     math::Pose current_pose = this->model->GetWorldPose();
 

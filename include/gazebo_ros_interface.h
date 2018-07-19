@@ -55,12 +55,14 @@ private:
             RadioTypes::RadioMessageDecoded::RawMessage> > queue;
   } cmdRadioChannel;
 
-
+  //FIXME: Handle simTimer, simulation time, ?!?!
   HardwareTimer simTimer;
   const double frequencySimulation = 500.0;
   std::shared_ptr<Onboard::QuadcopterLogic> _logic;
-
   std::mutex cmdRadioChannelMutex;  //protect against concurrency problems
+  Onboard::QuadcopterConstants::QuadcopterType quadcopterType;
+
+
 
   // Simulation::Quadcopter vehicle;
   int number_of_rotors;
