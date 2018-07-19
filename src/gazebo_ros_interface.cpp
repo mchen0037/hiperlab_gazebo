@@ -13,10 +13,12 @@ namespace gazebo {
   GZ_REGISTER_MODEL_PLUGIN(GazeboRosInterface);
 
   void GazeboRosInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
-    std::cout << "HELLO WORLD" << std::endl;
-    this->model = _model;
+    std::cout << ">>>>>>> gazebo_ros_interface successfully loaded <<<<" << std::endl;
+    model = _model;
 
-    this->number_of_rotors = _sdf->HasElement("numberOfRotors") ?
+    vehicle.reset(new SimVehicle());
+
+    number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
 
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
@@ -27,22 +29,15 @@ namespace gazebo {
     //for some reason using this->gzNode will break the code.
     gzNode->Init();
 
-    //Gazebo Subscribers: Imu Plugin, etc.
-    // std::string imuTopicName = "~/" + this->model->GetName() + "cmd_vel";
-    // this->imu_gz_sub = this->gzNode->Subscribe(
-    //   imuTopicName, &GazeboRosInterface::ImuCallback, this);
+    // Gazebo Subscribers: Imu Plugin, etc.
+    std::string imuTopicName = "~/" + model->GetName() + "/imu";
+    std::string cmd_motor_speed_topic_name = "~/" + model->GetName() +
+      "/gazebo/command/motor_speed";
 
-
-    //Gazebo Publishers stored in a map
-    //Assuming that rotor_#_joint is the name for the rotors.
-    for (int i = 0; i < this->number_of_rotors; ++i) {
-      std::string jointName = "rotor_" + std::to_string(i) + "_joint";
-      std::string topicName = "~/" + this->model->GetName() + "/" +
-        jointName + "/motor_velocity";
-      list_of_rotors.push_back(this->model->GetJoint(jointName));
-      rotors_publishers.insert(std::pair<std::string, transport::PublisherPtr>
-        (topicName, gzNode->Advertise<msgs::Vector3d>(topicName)));
-    }
+    imu_gz_sub = gzNode->Subscribe(
+      imuTopicName, &GazeboRosInterface::ImuCallback, this);
+    gzNode->Advertise<mav_msgs::msgs::CommandMotorSpeed>
+      (cmd_motor_speed_topic_name, 1);
 
     //initialize ROS
     if (!ros::isInitialized()) {
@@ -52,20 +47,21 @@ namespace gazebo {
     }
     this->nh.reset(new ros::NodeHandle("gazebo_client"));
 
-    //ROS SUBSCRIBERS FIXME: std_msgs::Float32 will change to an array for actuator values
-    ros::SubscribeOptions so = ros::SubscribeOptions::create<std_msgs::Float32>(
-      "/" + this->model->GetName() + "/rotors_motor_speed",
-      1,
-      boost::bind(&GazeboRosInterface::RotorsMotorSpeedCallback, this, _1),
-      ros::VoidPtr(), &this->rosQueue);
-    this->rosSub = this->nh->subscribe(so);
+    ros::SubscribeOptions so =
+      ros::SubscribeOptions::create<hiperlab_rostools::radio_command>(
+        "/radio_command5",
+        1,
+        boost::bind(&GazeboRosInterface::RadioCmdCallback, this, _1),
+        ros::VoidPtr(), &this->rosQueue);
+
+    this->sub_radio_cmd = this->nh->subscribe(so);
 
     //ROS PUBLISHERS
     this->simulator_truth_pub = this->nh->advertise<hiperlab_rostools::simulator_truth>(
-      "/" + this->model->GetName() + "/simulator_truth",
+      "/simulator_truth5",
       1);
     this->telem_pub = this->nh->advertise<hiperlab_rostools::telemetry>(
-      "/" + this->model->GetName() + "/telemetry", //FIXME: handle vehicle ID
+      "/telemetry5", //FIXME: handle vehicle ID
       1);
     this->mocap_output_pub = this->nh->advertise<hiperlab_rostools::mocap_output>(
       "/mocap_output5", //FIXME: handle vehicle ID
@@ -84,18 +80,6 @@ namespace gazebo {
     this->simulator_truth_pub.publish(current_truth);
     this->telem_pub.publish(current_telemetry);
     this->mocap_output_pub.publish(current_mocap);
-
-    //Gazebo Publishers for the motor velocities, publish individualvalues to each rotor plugin
-    for (std::map<std::string, transport::PublisherPtr>::iterator i =
-       rotors_publishers.begin();
-       i != rotors_publishers.end(); ++i) {
-         //i->first is the name of the joint, i->second is the publisher
-         transport::PublisherPtr rotor_pub = i->second;
-         //FIXME: Make this send meaningful data lol
-         gazebo::msgs::Vector3d msg;
-         gazebo::msgs::Set(&msg, ignition::math::Vector3d(1, 0, 0));
-         rotor_pub->Publish(msg);
-    }
   }
 
   hiperlab_rostools::mocap_output GazeboRosInterface::GetCurrentMocap() {
@@ -122,17 +106,27 @@ namespace gazebo {
     return msg;
   }
 
-  hiperlab_rostools::telemetry GazeboRosInterface::GetCurrentTelemetry() {
-    //FIXME: Make a global value for current_telem that subscribes to
-    //an IMU plugin.
-    hiperlab_rostools::telemetry msg;
-    return msg;
+  void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
+    msgs::Quaternion imu_msg_orientation = msg->orientation();
+    math::Quaternion imu_orientation = gazebo::msgs::ConvertIgn(
+      imu_msg_orientation);
+    math::Vector3 quatToEuler = imu_orientation.GetAsEuler();
+    current_telemetry.attitude[0] = quatToEuler.x;
+    current_telemetry.attitude[1] = quatToEuler.y;
+    current_telemetry.attitude[2] = quatToEuler.z;
+
+    msgs::Vector3d imu_msg_lin_accel = msg->linear_acceleration();
+    math::Vector3 imu_lin_accel = gazebo::msgs::ConvertIgn(
+      imu_msg_lin_accel);
+    current_telemetry.accelerometer[0] = imu_lin_accel.x;
+    current_telemetry.accelerometer[1] = imu_lin_accel.y;
+    current_telemetry.accelerometer[2] = imu_lin_accel.z;
   }
 
-  // void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
-  //   //FIXME: Write the plugin first
-  //   std::cout << "Hello from ImuCallback!" << std::endl;
-  // }
+  hiperlab_rostools::telemetry GazeboRosInterface::GetCurrentTelemetry() {
+
+    return current_telemetry;
+  }
 
   hiperlab_rostools::simulator_truth GazeboRosInterface::GetCurrentTruth() {
     math::Pose current_pose = this->model->GetWorldPose();
@@ -169,8 +163,13 @@ namespace gazebo {
     return current_truth;
   }
 
-  void GazeboRosInterface::RotorsMotorSpeedCallback(const std_msgs::Float32ConstPtr &_msg) {
-    std::cout << _msg->data << std::endl;
+  void GazeboRosInterface::RadioCmdCallback(const hiperlab_rostools::radio_command::ConstPtr &msg) {
+    std::lock_guard<std::mutex> guard(cmdRadioChannelMutex);
+    RadioTypes::RadioMessageDecoded::RawMessage rawMsg;
+    for (int i = 0; i < RadioTypes::RadioMessageDecoded::RAW_PACKET_SIZE; ++i) {
+      rawMsg.raw[i] = msg->raw[i];
+    }
+    vehicle->cmdRadioChannel.queue->AddMessage(rawMsg);
   }
 
   //Handle ROS multi-threading
