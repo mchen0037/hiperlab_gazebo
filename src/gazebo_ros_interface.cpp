@@ -20,6 +20,9 @@ namespace gazebo {
     _logic.reset(new Onboard::QuadcopterLogic(&simTimer, frequencySimulation));
     _logic->Initialise(quadcopterType, 5);
 
+    timer.reset(new Timer(&simTimer));
+    timePrintNextInfo = 0;
+
     number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
 
@@ -77,7 +80,11 @@ namespace gazebo {
   }
 
   void GazeboRosInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
-    _logic->PrintStatus();
+    //for debugging
+    if (timer->GetSeconds<double>() > timePrintNextInfo) {
+      timePrintNextInfo += 1;
+      _logic->PrintStatus();
+    }
 
     hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
     hiperlab_rostools::telemetry current_telemetry = GetCurrentTelemetry();

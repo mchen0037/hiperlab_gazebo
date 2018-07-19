@@ -61,7 +61,8 @@ private:
   std::shared_ptr<Onboard::QuadcopterLogic> _logic;
   std::mutex cmdRadioChannelMutex;  //protect against concurrency problems
   Onboard::QuadcopterConstants::QuadcopterType quadcopterType;
-
+  std::shared_ptr<Timer> timer;
+  double timePrintNextInfo;
 
 
   // Simulation::Quadcopter vehicle;
