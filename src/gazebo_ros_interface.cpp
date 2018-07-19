@@ -17,11 +17,14 @@ namespace gazebo {
     model = _model;
 
     quadcopterType = Onboard::QuadcopterConstants::GetVehicleTypeFromID(5);
-    _logic.reset(new Onboard::QuadcopterLogic(&simTimer, frequencySimulation));
+    _logic.reset(new Onboard::QuadcopterLogic(&simTimer, 1.0 / frequencySimulation));
     _logic->Initialise(quadcopterType, 5);
 
-    timer.reset(new Timer(&simTimer));
+    debugTimer.reset(new Timer(&simTimer));
     timePrintNextInfo = 0;
+
+    _timerOnboardLogic.reset(new Timer(&simTimer));
+    _onboardLogicPeriod = 1.0 / frequencySimulation;
 
     number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
@@ -80,8 +83,23 @@ namespace gazebo {
   }
 
   void GazeboRosInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
+    if(_timerOnboardLogic->GetSeconds<double>() > _onboardLogicPeriod) {
+      _timerOnboardLogic->AdjustTimeBySeconds(-_onboardLogicPeriod);
+
+    //maybe all of these are handled in motor_model_plugin
+      //TODO: Apply speed to motors (publish MotorSpeed.pb commands)
+      //Calc Force, Torque, Momentum
+      //Calc Ang Acceleration
+      //Calc Drag Force
+    //TODO: Set Battery Measurements X
+    //TODO: SetIMUMeasuremenatRateGyro
+    //TODO: SetIMUMeasurementAccelerometer
+
+    _logic->Run();
+    }
+
     //for debugging
-    if (timer->GetSeconds<double>() > timePrintNextInfo) {
+    if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
       timePrintNextInfo += 1;
       _logic->PrintStatus();
     }

@@ -58,11 +58,16 @@ private:
   //FIXME: Handle simTimer, simulation time, ?!?!
   HardwareTimer simTimer;
   const double frequencySimulation = 500.0;
+
   std::shared_ptr<Onboard::QuadcopterLogic> _logic;
   std::mutex cmdRadioChannelMutex;  //protect against concurrency problems
   Onboard::QuadcopterConstants::QuadcopterType quadcopterType;
-  std::shared_ptr<Timer> timer;
+
+  std::shared_ptr<Timer> debugTimer;
   double timePrintNextInfo;
+
+  std::shared_ptr<Timer> _timerOnboardLogic;
+  double _onboardLogicPeriod;
 
 
   // Simulation::Quadcopter vehicle;
