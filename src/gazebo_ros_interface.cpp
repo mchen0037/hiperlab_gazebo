@@ -88,11 +88,10 @@ namespace gazebo {
 
       //TODO: Set Battery Measurements X
 
-      //TODO: SetIMUMeasuremenatRateGyro
       _logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
                                         current_telemetry.rateGyro[1],
                                         current_telemetry.rateGyro[2]);
-      //TODO: SetIMUMeasurementAccelerometer
+
       _logic->SetIMUMeasurementAccelerometer(current_telemetry.accelerometer[0],
                                             current_telemetry.accelerometer[1],
                                             current_telemetry.accelerometer[2]);
@@ -102,7 +101,7 @@ namespace gazebo {
     //for debugging
     if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
       timePrintNextInfo += 1;
-      _logic->PrintStatus();
+      // _logic->PrintStatus();
     }
 
     hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
@@ -210,6 +209,7 @@ namespace gazebo {
       rawMsg.raw[i] = msg->raw[i];
     }
     cmdRadioChannel.queue->AddMessage(rawMsg);
+    ROS_INFO_STREAM(*msg);
   }
 
   //Handle ROS multi-threading
