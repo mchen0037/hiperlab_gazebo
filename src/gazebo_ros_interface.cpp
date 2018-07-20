@@ -90,12 +90,11 @@ namespace gazebo {
 
       //TODO: Set Battery Measurements X
 
-      //TODO: SetIMUMeasuremenatRateGyro
-      vehicle->_logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
+      _logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
                                         current_telemetry.rateGyro[1],
                                         current_telemetry.rateGyro[2]);
-      //TODO: SetIMUMeasurementAccelerometer
-      vehicle->_logic->SetIMUMeasurementAccelerometer(current_telemetry.accelerometer[0],
+
+      _logic->SetIMUMeasurementAccelerometer(current_telemetry.accelerometer[0],
                                             current_telemetry.accelerometer[1],
                                             current_telemetry.accelerometer[2]);
       vehicle->_logic->Run();
@@ -216,6 +215,7 @@ namespace gazebo {
     std::cout << "Trying to add a message\n";
     vehicle->cmdRadioChannel.queue->AddMessage(rawMsg); //segfaults here
     std::cout << "Added a message\n";
+
   }
 
   //Handle ROS multi-threading
