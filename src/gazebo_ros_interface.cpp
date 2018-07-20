@@ -16,9 +16,11 @@ namespace gazebo {
     std::cout << ">>>>>>> gazebo_ros_interface successfully loaded <<<<" << std::endl;
     model = _model;
 
+    vehicle.reset(new GazeboRosInterface::SimVehicle());
+
     quadcopterType = Onboard::QuadcopterConstants::GetVehicleTypeFromID(5);
-    _logic.reset(new Onboard::QuadcopterLogic(&simTimer, 1.0 / frequencySimulation));
-    _logic->Initialise(quadcopterType, 5);
+    vehicle->_logic.reset(new Onboard::QuadcopterLogic(&simTimer, 1.0 / frequencySimulation));
+    vehicle->_logic->Initialise(quadcopterType, 5);
 
     debugTimer.reset(new Timer(&simTimer));
     timePrintNextInfo = 0;
@@ -89,20 +91,20 @@ namespace gazebo {
       //TODO: Set Battery Measurements X
 
       //TODO: SetIMUMeasuremenatRateGyro
-      _logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
+      vehicle->_logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
                                         current_telemetry.rateGyro[1],
                                         current_telemetry.rateGyro[2]);
       //TODO: SetIMUMeasurementAccelerometer
-      _logic->SetIMUMeasurementAccelerometer(current_telemetry.accelerometer[0],
+      vehicle->_logic->SetIMUMeasurementAccelerometer(current_telemetry.accelerometer[0],
                                             current_telemetry.accelerometer[1],
                                             current_telemetry.accelerometer[2]);
-      _logic->Run();
+      vehicle->_logic->Run();
     }
 
     //for debugging
     if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
       timePrintNextInfo += 1;
-      _logic->PrintStatus();
+      // _logic->PrintStatus();
     }
 
     hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
@@ -204,12 +206,16 @@ namespace gazebo {
   }
 
   void GazeboRosInterface::RadioCmdCallback(const hiperlab_rostools::radio_command::ConstPtr &msg) {
+    ROS_INFO_STREAM(*msg);
     std::lock_guard<std::mutex> guard(cmdRadioChannelMutex);
     RadioTypes::RadioMessageDecoded::RawMessage rawMsg;
+    std::cout << RadioTypes::RadioMessageDecoded::RAW_PACKET_SIZE << std::endl;
     for (int i = 0; i < RadioTypes::RadioMessageDecoded::RAW_PACKET_SIZE; ++i) {
       rawMsg.raw[i] = msg->raw[i];
     }
-    cmdRadioChannel.queue->AddMessage(rawMsg);
+    std::cout << "Trying to add a message\n";
+    vehicle->cmdRadioChannel.queue->AddMessage(rawMsg); //segfaults here
+    std::cout << "Added a message\n";
   }
 
   //Handle ROS multi-threading

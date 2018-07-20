@@ -48,18 +48,21 @@ protected:
   void OnUpdate(const common::UpdateInfo&  /*_info*/);
 
 private:
+  struct SimVehicle {
+    struct {
+      std::shared_ptr<
+          Simulation::CommunicationsDelay<
+              RadioTypes::RadioMessageDecoded::RawMessage> > queue;
+    } cmdRadioChannel;
+    std::shared_ptr<Onboard::QuadcopterLogic> _logic;
+  };
 
-  struct {
-    std::shared_ptr<
-        Simulation::CommunicationsDelay<
-            RadioTypes::RadioMessageDecoded::RawMessage> > queue;
-  } cmdRadioChannel;
+  std::shared_ptr<SimVehicle> vehicle;
 
   //FIXME: Handle simTimer, simulation time, ?!?!
   HardwareTimer simTimer;
   const double frequencySimulation = 500.0;
 
-  std::shared_ptr<Onboard::QuadcopterLogic> _logic;
   std::mutex cmdRadioChannelMutex;  //protect against concurrency problems
   Onboard::QuadcopterConstants::QuadcopterType quadcopterType;
 
