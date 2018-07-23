@@ -117,6 +117,10 @@ namespace gazebo {
     if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
       timePrintNextInfo += 1;
       vehicle->_logic->PrintStatus();
+    }
+
+    if (debugTimer->GetSeconds<double>() > timePublishROS) {
+      timePublishROS += 1 / frequencyROS;
 
       hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
       hiperlab_rostools::telemetry current_telemetry = GetCurrentTelemetry();
