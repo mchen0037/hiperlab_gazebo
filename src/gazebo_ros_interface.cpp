@@ -89,6 +89,15 @@ namespace gazebo {
   }
 
   void GazeboRosInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
+
+    std::lock_guard<std::mutex> guard(cmdRadioChannelMutex);
+    if (vehicle->cmdRadioChannel.queue->HaveNewMessage()) {
+
+      RadioTypes::RadioMessageDecoded msg = RadioTypes::RadioMessageDecoded(
+        vehicle->cmdRadioChannel.queue->GetMessage().raw);
+      vehicle->_logic->SetRadioMessage(msg);
+    }
+
     if(_timerOnboardLogic->GetSeconds<double>() > _onboardLogicPeriod) {
       _timerOnboardLogic->AdjustTimeBySeconds(-_onboardLogicPeriod);
 
@@ -107,16 +116,16 @@ namespace gazebo {
     //for debugging
     if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
       timePrintNextInfo += 1;
-      // _logic->PrintStatus();
+      vehicle->_logic->PrintStatus();
+
+      hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
+      hiperlab_rostools::telemetry current_telemetry = GetCurrentTelemetry();
+      hiperlab_rostools::mocap_output current_mocap = GetCurrentMocap();
+
+      this->simulator_truth_pub.publish(current_truth);
+      this->telem_pub.publish(current_telemetry);
+      this->mocap_output_pub.publish(current_mocap);
     }
-
-    hiperlab_rostools::simulator_truth current_truth = GetCurrentTruth();
-    hiperlab_rostools::telemetry current_telemetry = GetCurrentTelemetry();
-    hiperlab_rostools::mocap_output current_mocap = GetCurrentMocap();
-
-    this->simulator_truth_pub.publish(current_truth);
-    this->telem_pub.publish(current_telemetry);
-    this->mocap_output_pub.publish(current_mocap);
   }
 
   hiperlab_rostools::mocap_output GazeboRosInterface::GetCurrentMocap() {
@@ -209,7 +218,6 @@ namespace gazebo {
   }
 
   void GazeboRosInterface::RadioCmdCallback(const hiperlab_rostools::radio_command::ConstPtr &msg) {
-    ROS_INFO_STREAM(*msg);
     std::lock_guard<std::mutex> guard(cmdRadioChannelMutex);
     RadioTypes::RadioMessageDecoded::RawMessage rawMsg;
     for (int i = 0; i < RadioTypes::RadioMessageDecoded::RAW_PACKET_SIZE; ++i) {
