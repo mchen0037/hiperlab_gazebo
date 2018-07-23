@@ -62,6 +62,7 @@ private:
   //FIXME: Handle simTimer, simulation time, ?!?!
   HardwareTimer simTimer;
   const double frequencySimulation = 500.0;
+  double const timeDelayOffboardControlLoop = 20e-3;
 
   std::mutex cmdRadioChannelMutex;  //protect against concurrency problems
   Onboard::QuadcopterConstants::QuadcopterType quadcopterType;

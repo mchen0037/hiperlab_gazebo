@@ -22,6 +22,10 @@ namespace gazebo {
     vehicle->_logic.reset(new Onboard::QuadcopterLogic(&simTimer, 1.0 / frequencySimulation));
     vehicle->_logic->Initialise(quadcopterType, 5);
 
+    vehicle->cmdRadioChannel.queue.reset(new Simulation::CommunicationsDelay<
+                RadioTypes::RadioMessageDecoded::RawMessage>(
+                &simTimer, timeDelayOffboardControlLoop));
+
     debugTimer.reset(new Timer(&simTimer));
     timePrintNextInfo = 0;
 
@@ -90,11 +94,11 @@ namespace gazebo {
 
       //TODO: Set Battery Measurements X
 
-      _logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
+      vehicle->_logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
                                         current_telemetry.rateGyro[1],
                                         current_telemetry.rateGyro[2]);
 
-      _logic->SetIMUMeasurementAccelerometer(current_telemetry.accelerometer[0],
+      vehicle->_logic->SetIMUMeasurementAccelerometer(current_telemetry.accelerometer[0],
                                             current_telemetry.accelerometer[1],
                                             current_telemetry.accelerometer[2]);
       vehicle->_logic->Run();
@@ -208,14 +212,10 @@ namespace gazebo {
     ROS_INFO_STREAM(*msg);
     std::lock_guard<std::mutex> guard(cmdRadioChannelMutex);
     RadioTypes::RadioMessageDecoded::RawMessage rawMsg;
-    std::cout << RadioTypes::RadioMessageDecoded::RAW_PACKET_SIZE << std::endl;
     for (int i = 0; i < RadioTypes::RadioMessageDecoded::RAW_PACKET_SIZE; ++i) {
       rawMsg.raw[i] = msg->raw[i];
     }
-    std::cout << "Trying to add a message\n";
-    vehicle->cmdRadioChannel.queue->AddMessage(rawMsg); //segfaults here
-    std::cout << "Added a message\n";
-
+    vehicle->cmdRadioChannel.queue->AddMessage(rawMsg);
   }
 
   //Handle ROS multi-threading
