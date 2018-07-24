@@ -104,7 +104,6 @@ namespace gazebo {
 
     if(_timerOnboardLogic->GetSeconds<double>() > _onboardLogicPeriod) {
       _timerOnboardLogic->AdjustTimeBySeconds(-_onboardLogicPeriod);
-
       //TODO: Set Battery Measurements X
 
       vehicle->_logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
@@ -115,12 +114,24 @@ namespace gazebo {
                                             current_telemetry.accelerometer[1],
                                             current_telemetry.accelerometer[2]);
       vehicle->_logic->Run();
+      std::cout << vehicle->_logic->getFSName() << std::endl;
     }
 
     //for debugging
     if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
       timePrintNextInfo += 1;
-      vehicle->_logic->PrintStatus();
+      // vehicle->_logic->PrintStatus();
+
+      std::cout << "\n ***FROM PLUGIN*** \nMotor Forces: <" <<
+        vehicle->_logic->_desMotorForcesForTelemetry[0] << "," <<
+        vehicle->_logic->_desMotorForcesForTelemetry[1] << "," <<
+        vehicle->_logic->_desMotorForcesForTelemetry[2] << "," <<
+        vehicle->_logic->_desMotorForcesForTelemetry[3] << ">" << std::endl;
+      std::cout << "Motor Speeds: <" <<
+        vehicle->_logic->_desMotorSpeeds[0] << "," <<
+        vehicle->_logic->_desMotorSpeeds[1] << "," <<
+        vehicle->_logic->_desMotorSpeeds[2] << "," <<
+        vehicle->_logic->_desMotorSpeeds[3] << ">\n ***FROM PLUGIN*** \n" << std::endl;
     }
 
     if (debugTimer->GetSeconds<double>() > timePublishROS) {
@@ -147,10 +158,11 @@ namespace gazebo {
     msg.posy = current_pose.pos.y;
     msg.posz = current_pose.pos.z;
 
-    msg.attq0 = current_pose.rot.x;
-    msg.attq1 = current_pose.rot.y;
-    msg.attq2 = current_pose.rot.z;
-    msg.attq3 = current_pose.rot.w;
+    //FIXME: what is the correct order for this?
+    msg.attq0 = current_pose.rot.w;
+    msg.attq1 = current_pose.rot.x;
+    msg.attq2 = current_pose.rot.y;
+    msg.attq3 = current_pose.rot.z;
 
     math::Vector3 quatToEuler = current_pose.rot.GetAsEuler();
     msg.attroll = quatToEuler.x;
@@ -199,10 +211,10 @@ namespace gazebo {
     current_truth.posz = current_pose.pos.z;
 
     //FIXME: check if q0 is x or w in Quaternion. see http://osrf-distributions.s3.amazonaws.com/gazebo/api/7.1.0/classgazebo_1_1math_1_1Quaternion.html
-    current_truth.attq0 = current_pose.rot.x;
-    current_truth.attq1 = current_pose.rot.y;
-    current_truth.attq2 = current_pose.rot.z;
-    current_truth.attq3 = current_pose.rot.w;
+    current_truth.attq0 = current_pose.rot.w;
+    current_truth.attq1 = current_pose.rot.x;
+    current_truth.attq2 = current_pose.rot.y;
+    current_truth.attq3 = current_pose.rot.z;
 
     //FIXME: double check this one also x, y, z = roll, pitch, yaw?
     math::Vector3 quatToEuler = current_pose.rot.GetAsEuler();
