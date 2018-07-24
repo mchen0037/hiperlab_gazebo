@@ -22,6 +22,7 @@ namespace gazebo {
     vehicle->_logic.reset(new Onboard::QuadcopterLogic(&simTimer, 1.0 / frequencySimulation));
     vehicle->_logic->Initialise(quadcopterType, 5);
 
+
     vehicle->cmdRadioChannel.queue.reset(new Simulation::CommunicationsDelay<
                 RadioTypes::RadioMessageDecoded::RawMessage>(
                 &simTimer, timeDelayOffboardControlLoop));
@@ -85,6 +86,9 @@ namespace gazebo {
 
     //handle ROS multi-threading
     this->rosQueueThread = std::thread(std::bind(&GazeboRosInterface::QueueThread, this));
+
+    //to avoid getting the 0 vector, see #11 on git repo
+    current_telemetry.accelerometer[2] = 0.1;
     return;
   }
 
