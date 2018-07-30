@@ -95,6 +95,7 @@ private:
   //Gazebo Subscribers
   transport::SubscriberPtr imu_gz_sub;
   void ImuCallback(ImuPtr& msg);
+  Vec3f current_attitude, current_accelerometer, current_rateGyro;
 
   //ROS Stuff
   ros::CallbackQueue rosQueue;
