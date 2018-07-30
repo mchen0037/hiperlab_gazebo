@@ -94,7 +94,7 @@ namespace gazebo {
     this->rosQueueThread = std::thread(std::bind(&GazeboRosInterface::QueueThread, this));
 
     //to avoid getting the 0 vector, see #11 on git repo
-    current_telemetry.accelerometer[2] = 0.1;
+    current_accelerometer[2] = 0.1;
     return;
   }
 
@@ -122,24 +122,12 @@ namespace gazebo {
                                             current_accelerometer[1],
                                             current_accelerometer[2]);
       vehicle->_logic->Run();
-      std::cout << vehicle->_logic->getFSName() << std::endl;
     }
 
     //for debugging
     if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
       timePrintNextInfo += 1;
-      // vehicle->_logic->PrintStatus();
-
-      std::cout << "\n ***FROM PLUGIN*** \nMotor Forces: <" <<
-        vehicle->_logic->_desMotorForcesForTelemetry[0] << "," <<
-        vehicle->_logic->_desMotorForcesForTelemetry[1] << "," <<
-        vehicle->_logic->_desMotorForcesForTelemetry[2] << "," <<
-        vehicle->_logic->_desMotorForcesForTelemetry[3] << ">" << std::endl;
-      std::cout << "Motor Speeds: <" <<
-        vehicle->_logic->_desMotorSpeeds[0] << "," <<
-        vehicle->_logic->_desMotorSpeeds[1] << "," <<
-        vehicle->_logic->_desMotorSpeeds[2] << "," <<
-        vehicle->_logic->_desMotorSpeeds[3] << ">\n ***FROM PLUGIN*** \n" << std::endl;
+      vehicle->_logic->PrintStatus();
     }
 
     if (debugTimer->GetSeconds<double>() > timePublishROS) {
