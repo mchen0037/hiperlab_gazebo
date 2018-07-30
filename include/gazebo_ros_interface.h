@@ -66,6 +66,8 @@ private:
   double const timeDelayOffboardControlLoop = 20e-3;
   double timePublishROS = 0;
 
+  float _battVoltage, _battCurrent;
+
   std::mutex cmdRadioChannelMutex;  //protect against concurrency problems
   Onboard::QuadcopterConstants::QuadcopterType quadcopterType;
 
@@ -95,6 +97,7 @@ private:
   //Gazebo Subscribers
   transport::SubscriberPtr imu_gz_sub;
   void ImuCallback(ImuPtr& msg);
+  Vec3f current_attitude, current_accelerometer, current_rateGyro;
 
   //ROS Stuff
   ros::CallbackQueue rosQueue;

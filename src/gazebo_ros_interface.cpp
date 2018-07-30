@@ -19,9 +19,15 @@ namespace gazebo {
     vehicle.reset(new GazeboRosInterface::SimVehicle());
 
     quadcopterType = Onboard::QuadcopterConstants::GetVehicleTypeFromID(5);
+    Onboard::QuadcopterConstants consts(quadcopterType);
+    _battVoltage = consts.lowBatteryThreshold + 0.5;
+    _battCurrent = -1.0;
     vehicle->_logic.reset(new Onboard::QuadcopterLogic(&simTimer, 1.0 / frequencySimulation));
     vehicle->_logic->Initialise(quadcopterType, 5);
 
+    current_attitude = Vec3f(0, 0, 0);
+    current_accelerometer = Vec3f(0, 0, 0);
+    current_rateGyro = Vec3f(0, 0, 0);
 
     vehicle->cmdRadioChannel.queue.reset(new Simulation::CommunicationsDelay<
                 RadioTypes::RadioMessageDecoded::RawMessage>(
@@ -104,23 +110,36 @@ namespace gazebo {
 
     if(_timerOnboardLogic->GetSeconds<double>() > _onboardLogicPeriod) {
       _timerOnboardLogic->AdjustTimeBySeconds(-_onboardLogicPeriod);
-
       //TODO: Set Battery Measurements X
 
-      vehicle->_logic->SetIMUMeasurementRateGyro(current_telemetry.rateGyro[0],
-                                        current_telemetry.rateGyro[1],
-                                        current_telemetry.rateGyro[2]);
+      vehicle->_logic->SetBatteryMeasurement(_battVoltage, _battCurrent);
 
-      vehicle->_logic->SetIMUMeasurementAccelerometer(current_telemetry.accelerometer[0],
-                                            current_telemetry.accelerometer[1],
-                                            current_telemetry.accelerometer[2]);
+      vehicle->_logic->SetIMUMeasurementRateGyro(current_rateGyro[0],
+                                        current_rateGyro[1],
+                                        current_rateGyro[2]);
+
+      vehicle->_logic->SetIMUMeasurementAccelerometer(current_accelerometer[0],
+                                            current_accelerometer[1],
+                                            current_accelerometer[2]);
       vehicle->_logic->Run();
+      std::cout << vehicle->_logic->getFSName() << std::endl;
     }
 
     //for debugging
     if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
       timePrintNextInfo += 1;
-      vehicle->_logic->PrintStatus();
+      // vehicle->_logic->PrintStatus();
+
+      std::cout << "\n ***FROM PLUGIN*** \nMotor Forces: <" <<
+        vehicle->_logic->_desMotorForcesForTelemetry[0] << "," <<
+        vehicle->_logic->_desMotorForcesForTelemetry[1] << "," <<
+        vehicle->_logic->_desMotorForcesForTelemetry[2] << "," <<
+        vehicle->_logic->_desMotorForcesForTelemetry[3] << ">" << std::endl;
+      std::cout << "Motor Speeds: <" <<
+        vehicle->_logic->_desMotorSpeeds[0] << "," <<
+        vehicle->_logic->_desMotorSpeeds[1] << "," <<
+        vehicle->_logic->_desMotorSpeeds[2] << "," <<
+        vehicle->_logic->_desMotorSpeeds[3] << ">\n ***FROM PLUGIN*** \n" << std::endl;
     }
 
     if (debugTimer->GetSeconds<double>() > timePublishROS) {
@@ -147,10 +166,11 @@ namespace gazebo {
     msg.posy = current_pose.pos.y;
     msg.posz = current_pose.pos.z;
 
-    msg.attq0 = current_pose.rot.x;
-    msg.attq1 = current_pose.rot.y;
-    msg.attq2 = current_pose.rot.z;
-    msg.attq3 = current_pose.rot.w;
+    //FIXME: what is the correct order for this?
+    msg.attq0 = current_pose.rot.w;
+    msg.attq1 = current_pose.rot.x;
+    msg.attq2 = current_pose.rot.y;
+    msg.attq3 = current_pose.rot.z;
 
     math::Vector3 quatToEuler = current_pose.rot.GetAsEuler();
     msg.attroll = quatToEuler.x;
@@ -166,27 +186,66 @@ namespace gazebo {
     math::Quaternion imu_orientation = gazebo::msgs::ConvertIgn(
       imu_msg_orientation);
     math::Vector3 quatToEuler = imu_orientation.GetAsEuler();
-    current_telemetry.attitude[0] = quatToEuler.x;
-    current_telemetry.attitude[1] = quatToEuler.y;
-    current_telemetry.attitude[2] = quatToEuler.z;
+    current_attitude.x = quatToEuler.x;
+    current_attitude.y = quatToEuler.y;
+    current_attitude.z = quatToEuler.z;
 
     msgs::Vector3d imu_msg_lin_accel = msg->linear_acceleration();
     math::Vector3 imu_lin_accel = gazebo::msgs::ConvertIgn(
       imu_msg_lin_accel);
-    current_telemetry.accelerometer[0] = imu_lin_accel.x;
-    current_telemetry.accelerometer[1] = imu_lin_accel.y;
-    current_telemetry.accelerometer[2] = imu_lin_accel.z;
+    current_accelerometer.x = imu_lin_accel.x;
+    current_accelerometer.y = imu_lin_accel.y;
+    current_accelerometer.z = imu_lin_accel.z;
 
     msgs::Vector3d imu_msg_gyro = msg->angular_velocity();
     math::Vector3 imu_gyro = gazebo::msgs::ConvertIgn(imu_msg_gyro);
-    current_telemetry.rateGyro[0] = imu_gyro.x;
-    current_telemetry.rateGyro[1] = imu_gyro.y;
-    current_telemetry.rateGyro[2] = imu_gyro.z;
+    current_rateGyro.x = imu_gyro.x;
+    current_rateGyro.y = imu_gyro.y;
+    current_rateGyro.z = imu_gyro.z;
   }
 
   hiperlab_rostools::telemetry GazeboRosInterface::GetCurrentTelemetry() {
+    hiperlab_rostools::telemetry telMsgOut;
+    //Fill out the telemetry package
+    TelemetryPacket::data_packet_t dataPacketRaw1, dataPacketRaw2;
+    vehicle->_logic->GetTelemetryDataPackets(dataPacketRaw1, dataPacketRaw2); //<><
 
-    return current_telemetry;
+    TelemetryPacket::TelemetryPacket dataPacket1, dataPacket2;
+    TelemetryPacket::DecodeTelemetryPacket(dataPacketRaw1, dataPacket1);
+    TelemetryPacket::DecodeTelemetryPacket(dataPacketRaw2, dataPacket2);
+
+    telMsgOut.packetNumber = dataPacket1.packetNumber;
+    for (int i = 0; i < 3; i++) {
+      telMsgOut.accelerometer[i] = dataPacket1.accel[i];
+      telMsgOut.rateGyro[i] = dataPacket1.gyro[i];
+      telMsgOut.position[i] = dataPacket1.position[i];
+    }
+
+    for (int i = 0; i < 4; i++) {
+      telMsgOut.motorForces[i] = dataPacket1.motorForces[i];
+    }
+    telMsgOut.batteryVoltage = dataPacket1.battVoltage;
+
+    for (int i = 0; i < TelemetryPacket::TelemetryPacket::NUM_DEBUG_FLOATS;
+        i++) {
+      telMsgOut.debugVals[i] = dataPacket2.debugVals[i];
+    }
+
+    Vec3f attYPR = Rotationf::FromVectorPartOfQuaternion(
+        Vec3f(dataPacket2.attitude[0], dataPacket2.attitude[1],
+              dataPacket2.attitude[2])).ToEulerYPR();
+    for (int i = 0; i < 3; i++) {
+      telMsgOut.velocity[i] = dataPacket2.velocity[i];
+      telMsgOut.attitude[i] = dataPacket2.attitude[i];
+      telMsgOut.attitudeYPR[i] = attYPR[i];
+
+    }
+    telMsgOut.panicReason = dataPacket2.panicReason;
+    telMsgOut.warnings = dataPacket2.warnings;
+
+    telMsgOut.header.stamp = ros::Time::now();
+
+    return telMsgOut;
   }
 
   //Convienent function to grab the Current Simulation Truth
@@ -199,10 +258,10 @@ namespace gazebo {
     current_truth.posz = current_pose.pos.z;
 
     //FIXME: check if q0 is x or w in Quaternion. see http://osrf-distributions.s3.amazonaws.com/gazebo/api/7.1.0/classgazebo_1_1math_1_1Quaternion.html
-    current_truth.attq0 = current_pose.rot.x;
-    current_truth.attq1 = current_pose.rot.y;
-    current_truth.attq2 = current_pose.rot.z;
-    current_truth.attq3 = current_pose.rot.w;
+    current_truth.attq0 = current_pose.rot.w;
+    current_truth.attq1 = current_pose.rot.x;
+    current_truth.attq2 = current_pose.rot.y;
+    current_truth.attq3 = current_pose.rot.z;
 
     //FIXME: double check this one also x, y, z = roll, pitch, yaw?
     math::Vector3 quatToEuler = current_pose.rot.GetAsEuler();
