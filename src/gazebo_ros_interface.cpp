@@ -19,6 +19,9 @@ namespace gazebo {
     vehicle.reset(new GazeboRosInterface::SimVehicle());
 
     quadcopterType = Onboard::QuadcopterConstants::GetVehicleTypeFromID(5);
+    Onboard::QuadcopterConstants consts(quadcopterType);
+    _battVoltage = consts.lowBatteryThreshold + 0.5;
+    _battCurrent = -1.0;
     vehicle->_logic.reset(new Onboard::QuadcopterLogic(&simTimer, 1.0 / frequencySimulation));
     vehicle->_logic->Initialise(quadcopterType, 5);
 
@@ -108,6 +111,8 @@ namespace gazebo {
     if(_timerOnboardLogic->GetSeconds<double>() > _onboardLogicPeriod) {
       _timerOnboardLogic->AdjustTimeBySeconds(-_onboardLogicPeriod);
       //TODO: Set Battery Measurements X
+
+      vehicle->_logic->SetBatteryMeasurement(_battVoltage, _battCurrent);
 
       vehicle->_logic->SetIMUMeasurementRateGyro(current_rateGyro[0],
                                         current_rateGyro[1],

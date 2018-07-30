@@ -66,6 +66,8 @@ private:
   double const timeDelayOffboardControlLoop = 20e-3;
   double timePublishROS = 0;
 
+  float _battVoltage, _battCurrent;
+
   std::mutex cmdRadioChannelMutex;  //protect against concurrency problems
   Onboard::QuadcopterConstants::QuadcopterType quadcopterType;
 
