@@ -59,7 +59,7 @@ namespace gazebo {
 
     imu_gz_sub = gzNode->Subscribe(
       imuTopicName, &GazeboRosInterface::ImuCallback, this);
-    gzNode->Advertise<mav_msgs::msgs::CommandMotorSpeed>
+    cmd_motor_speed_pub = gzNode->Advertise<mav_msgs::msgs::CommandMotorSpeed>
       (cmd_motor_speed_topic_name, 1);
 
     //initialize ROS
@@ -110,8 +110,8 @@ namespace gazebo {
 
     if(_timerOnboardLogic->GetSeconds<double>() > _onboardLogicPeriod) {
       _timerOnboardLogic->AdjustTimeBySeconds(-_onboardLogicPeriod);
-      //TODO: Set Battery Measurements X
 
+      //TODO: Set Battery Measurements X
       vehicle->_logic->SetBatteryMeasurement(_battVoltage, _battCurrent);
 
       vehicle->_logic->SetIMUMeasurementRateGyro(current_rateGyro[0],
@@ -122,6 +122,14 @@ namespace gazebo {
                                             current_accelerometer[1],
                                             current_accelerometer[2]);
       vehicle->_logic->Run();
+
+      mav_msgs::msgs::CommandMotorSpeed turning_velocities_msg;
+      for (int i = 0; i < number_of_rotors; ++i) {
+        turning_velocities_msg.add_motor_speed(
+          vehicle->_logic->GetMotorSpeedCmd(i)
+        );
+      }
+      cmd_motor_speed_pub->Publish(turning_velocities_msg);
     }
 
     //for debugging

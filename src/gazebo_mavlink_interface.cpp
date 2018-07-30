@@ -388,7 +388,7 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo&  /*_info*/) {
 
   handle_control(dt);
 
-  if (received_first_referenc_) {
+  if (received_first_referenc_) { // <><
     mav_msgs::msgs::CommandMotorSpeed turning_velocities_msg;
 
     for (int i = 0; i < input_reference_.size(); i++) {
