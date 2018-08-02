@@ -1,4 +1,5 @@
-/*  The bridge to communicate beween several Gazebo plugins and ROS msgs.
+/*
+The bridge to communicate beween several Gazebo plugins and ROS msgs.
 
     Created By Mighty Chen 6/29/18
     mchen73@ucmerced.edu
@@ -6,18 +7,16 @@
 
 #include <gazebo_ros_interface.h>
 
-//FIXME: Handle simulation time and ROS publishing rate?
-
 namespace gazebo {
   //Line is necessary for all Gazebo Plugins
   GZ_REGISTER_MODEL_PLUGIN(GazeboRosInterface);
 
   void GazeboRosInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
-    std::cout << ">>>>>>> gazebo_ros_interface successfully loaded <<<<" << std::endl;
     model = _model;
 
     vehicle.reset(new GazeboRosInterface::SimVehicle());
 
+    //FIXME: Vehicle ID and new Quadcopter type for Simulation?
     quadcopterType = Onboard::QuadcopterConstants::GetVehicleTypeFromID(5);
     Onboard::QuadcopterConstants consts(quadcopterType);
     _battVoltage = consts.lowBatteryThreshold + 0.5;
@@ -25,20 +24,24 @@ namespace gazebo {
     vehicle->_logic.reset(new Onboard::QuadcopterLogic(&simTimer, 1.0 / frequencySimulation));
     vehicle->_logic->Initialise(quadcopterType, 5);
 
+    //Initialize vectors for gyro
     current_attitude = Vec3f(0, 0, 0);
     current_accelerometer = Vec3f(0, 0, 0);
     current_rateGyro = Vec3f(0, 0, 0);
 
+    //Initialize the queue to listen to radio commands
     vehicle->cmdRadioChannel.queue.reset(new Simulation::CommunicationsDelay<
                 RadioTypes::RadioMessageDecoded::RawMessage>(
                 &simTimer, timeDelayOffboardControlLoop));
 
+    //Initialize Timers
     debugTimer.reset(new Timer(&simTimer));
     timePrintNextInfo = 0;
 
     _timerOnboardLogic.reset(new Timer(&simTimer));
     _onboardLogicPeriod = 1.0 / frequencySimulation;
 
+    //Specify number of rotors in SDF file. If not present, default to 4.
     number_of_rotors = _sdf->HasElement("numberOfRotors") ?
       _sdf->Get<int>("numberOfRotors") : 4;
 
@@ -47,9 +50,12 @@ namespace gazebo {
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
         boost::bind(&GazeboRosInterface::OnUpdate, this, _1));
 
-    //GAZEBO TRANSPORTATION SYSTEM
+    //********************************************
+    //**      GAZEBO TRANSPORTATION SYSTEM      **
+    //********************************************
+
     gazebo::transport::NodePtr gzNode(new gazebo::transport::Node());
-    //for some reason using this->gzNode will break the code.
+    //using this->gzNode will break the code.
     gzNode->Init();
 
     // Gazebo Subscribers: Imu Plugin, etc.
@@ -57,12 +63,18 @@ namespace gazebo {
     std::string cmd_motor_speed_topic_name = "~/" + model->GetName() +
       "/gazebo/command/motor_speed";
 
+    //Subscribe to IMU (gazebo_imu_plugin)
     imu_gz_sub = gzNode->Subscribe(
       imuTopicName, &GazeboRosInterface::ImuCallback, this);
+    //Publish MotorSpeeds (from vehicle->_logic to gazebo_motor_model)
     cmd_motor_speed_pub = gzNode->Advertise<mav_msgs::msgs::CommandMotorSpeed>
       (cmd_motor_speed_topic_name, 1);
 
-    //initialize ROS
+    //********************************************
+    //**               ROS SYSTEM               **
+    //********************************************
+
+    //init ROS
     if (!ros::isInitialized()) {
       int argc = 0;
       char ** argv = NULL;
@@ -70,22 +82,24 @@ namespace gazebo {
     }
     this->nh.reset(new ros::NodeHandle("gazebo_client"));
 
+    //ROS Subscriber to Radio Command. Define the subscriber parameters and then sub.
     ros::SubscribeOptions so =
       ros::SubscribeOptions::create<hiperlab_rostools::radio_command>(
         "/radio_command5",
         1,
         boost::bind(&GazeboRosInterface::RadioCmdCallback, this, _1),
         ros::VoidPtr(), &this->rosQueue);
-
     this->sub_radio_cmd = this->nh->subscribe(so);
 
-    //ROS PUBLISHERS
+    //ROS Publisher to simulator Truth
     this->simulator_truth_pub = this->nh->advertise<hiperlab_rostools::simulator_truth>(
       "/simulator_truth5",
-      1);
+      1); //FIXME: Handle vehicle ID
+    //ROS Publisher to telemetry
     this->telem_pub = this->nh->advertise<hiperlab_rostools::telemetry>(
       "/telemetry5", //FIXME: handle vehicle ID
       1);
+    //ROS Publisher to mocap_output (TODO: it is the same as simulator_truth)
     this->mocap_output_pub = this->nh->advertise<hiperlab_rostools::mocap_output>(
       "/mocap_output5", //FIXME: handle vehicle ID
       1);
@@ -95,19 +109,20 @@ namespace gazebo {
 
     //to avoid getting the 0 vector, see #11 on git repo
     current_accelerometer[2] = 0.1;
+
     return;
   }
 
   void GazeboRosInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
-
+    //To handle radio messages
     std::lock_guard<std::mutex> guard(cmdRadioChannelMutex);
     if (vehicle->cmdRadioChannel.queue->HaveNewMessage()) {
-
       RadioTypes::RadioMessageDecoded msg = RadioTypes::RadioMessageDecoded(
         vehicle->cmdRadioChannel.queue->GetMessage().raw);
       vehicle->_logic->SetRadioMessage(msg);
     }
 
+    //Run the logic every 1/frequencySimulation seconds. Also publish motor speed values.
     if(_timerOnboardLogic->GetSeconds<double>() > _onboardLogicPeriod) {
       _timerOnboardLogic->AdjustTimeBySeconds(-_onboardLogicPeriod);
 
@@ -133,11 +148,12 @@ namespace gazebo {
     }
 
     //for debugging
-    if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
-      timePrintNextInfo += 1;
-      vehicle->_logic->PrintStatus();
-    }
+    // if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
+    //   timePrintNextInfo += 1;
+    //   vehicle->_logic->PrintStatus();
+    // }
 
+    //Publish to ROS every 1/frequencyROS seconds //FIXME: Is this correct?
     if (debugTimer->GetSeconds<double>() > timePublishROS) {
       timePublishROS += 1 / frequencyROS;
 
@@ -162,7 +178,6 @@ namespace gazebo {
     msg.posy = current_pose.pos.y;
     msg.posz = current_pose.pos.z;
 
-    //FIXME: what is the correct order for this?
     msg.attq0 = current_pose.rot.w;
     msg.attq1 = current_pose.rot.x;
     msg.attq2 = current_pose.rot.y;
@@ -178,6 +193,7 @@ namespace gazebo {
 
   //Handle IMU Messages from Gazebo Plugin
   void GazeboRosInterface::ImuCallback(ImuPtr &msg) {
+    //Convert from Quaternion Msg -> Quaternion -> Eurler Angles
     msgs::Quaternion imu_msg_orientation = msg->orientation();
     math::Quaternion imu_orientation = gazebo::msgs::ConvertIgn(
       imu_msg_orientation);
@@ -253,13 +269,11 @@ namespace gazebo {
     current_truth.posy = current_pose.pos.y;
     current_truth.posz = current_pose.pos.z;
 
-    //FIXME: check if q0 is x or w in Quaternion. see http://osrf-distributions.s3.amazonaws.com/gazebo/api/7.1.0/classgazebo_1_1math_1_1Quaternion.html
     current_truth.attq0 = current_pose.rot.w;
     current_truth.attq1 = current_pose.rot.x;
     current_truth.attq2 = current_pose.rot.y;
     current_truth.attq3 = current_pose.rot.z;
 
-    //FIXME: double check this one also x, y, z = roll, pitch, yaw?
     math::Vector3 quatToEuler = current_pose.rot.GetAsEuler();
     current_truth.attroll = quatToEuler.x;
     current_truth.attpitch = quatToEuler.y;
@@ -280,6 +294,7 @@ namespace gazebo {
     return current_truth;
   }
 
+  //Callback function for whenever a radio command message is recieved.
   void GazeboRosInterface::RadioCmdCallback(const hiperlab_rostools::radio_command::ConstPtr &msg) {
     std::lock_guard<std::mutex> guard(cmdRadioChannelMutex);
     RadioTypes::RadioMessageDecoded::RawMessage rawMsg;
