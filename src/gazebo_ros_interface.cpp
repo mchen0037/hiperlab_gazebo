@@ -14,15 +14,16 @@ namespace gazebo {
   void GazeboRosInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     model = _model;
 
+    //int vehicleID = 5; //FIXME: Handle Vehicle ID better, default is 37
+
     vehicle.reset(new GazeboRosInterface::SimVehicle());
 
-    //FIXME: Vehicle ID and new Quadcopter type for Simulation?
-    quadcopterType = Onboard::QuadcopterConstants::GetVehicleTypeFromID(5);
+    quadcopterType = Onboard::QuadcopterConstants::GetVehicleTypeFromID(vehicleID);
     Onboard::QuadcopterConstants consts(quadcopterType);
     _battVoltage = consts.lowBatteryThreshold + 0.5;
     _battCurrent = -1.0;
     vehicle->_logic.reset(new Onboard::QuadcopterLogic(&simTimer, 1.0 / frequencySimulation));
-    vehicle->_logic->Initialise(quadcopterType, 5);
+    vehicle->_logic->Initialise(quadcopterType, vehicleID);
 
     //Initialize vectors for gyro
     current_attitude = Vec3f(0, 0, 0);
@@ -85,7 +86,7 @@ namespace gazebo {
     //ROS Subscriber to Radio Command. Define the subscriber parameters and then sub.
     ros::SubscribeOptions so =
       ros::SubscribeOptions::create<hiperlab_rostools::radio_command>(
-        "/radio_command5",
+        "/radio_command" + std::to_string(vehicleID),
         1,
         boost::bind(&GazeboRosInterface::RadioCmdCallback, this, _1),
         ros::VoidPtr(), &this->rosQueue);
@@ -93,15 +94,15 @@ namespace gazebo {
 
     //ROS Publisher to simulator Truth
     this->simulator_truth_pub = this->nh->advertise<hiperlab_rostools::simulator_truth>(
-      "/simulator_truth5",
-      1); //FIXME: Handle vehicle ID
+      "/simulator_truth"  + std::to_string(vehicleID),
+      1);
     //ROS Publisher to telemetry
     this->telem_pub = this->nh->advertise<hiperlab_rostools::telemetry>(
-      "/telemetry5", //FIXME: handle vehicle ID
+      "/telemetry" + std::to_string(vehicleID),
       1);
-    //ROS Publisher to mocap_output (TODO: it is the same as simulator_truth)
+    //ROS Publisher to mocap_output (TODO: it is the same as simulator_truth, add noise)
     this->mocap_output_pub = this->nh->advertise<hiperlab_rostools::mocap_output>(
-      "/mocap_output5", //FIXME: handle vehicle ID
+      "/mocap_output" + std::to_string(vehicleID),
       1);
 
     //handle ROS multi-threading
@@ -153,7 +154,7 @@ namespace gazebo {
     //   vehicle->_logic->PrintStatus();
     // }
 
-    //Publish to ROS every 1/frequencyROS seconds //FIXME: Is this correct?
+    //Publish to ROS every 1/frequencyROS seconds
     if (debugTimer->GetSeconds<double>() > timePublishROS) {
       timePublishROS += 1 / frequencyROS;
 
@@ -172,7 +173,7 @@ namespace gazebo {
     //TODO: noise? mocap system? not simulation truth?
     math::Pose current_pose = this->model->GetWorldPose();
 
-    msg.vehicleID = 5; //FIXME: handle vehicle id
+    msg.vehicleID = vehicleID;
 
     msg.posx = current_pose.pos.x;
     msg.posy = current_pose.pos.y;
@@ -291,8 +292,7 @@ namespace gazebo {
     current_truth.angvely = current_ang_vel.y;
     current_truth.angvelz = current_ang_vel.z;
 
-    //FIXME: Handle vehicleID
-    current_truth.vehicleID = 5;
+    current_truth.vehicleID = vehicleID;
 
     current_truth.header.stamp = ros::Time::now();
     return current_truth;

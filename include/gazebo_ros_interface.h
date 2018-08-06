@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <string>
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
@@ -45,6 +46,9 @@ protected:
   void OnUpdate(const common::UpdateInfo&  /*_info*/);
 
 private:
+  //Please find a better way to handle vehicle ID. My QuadcopterConstants will take vehicleID 37 as the iris model.
+  int vehicleID = 37;
+
   //Struct to handle vehicles within the simulator. Theoretically works if you
   //spawn more than one vehicle, but haven't tested it yet.
   struct SimVehicle {
