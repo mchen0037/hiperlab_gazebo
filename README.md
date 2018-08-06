@@ -26,6 +26,25 @@ export GAZEBO_PLUGIN_PATH=$GAZEBO_PLUGIN_PATH:~/catkin_ws/devel/lib
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/catkin_ws/src/hiperlab_gazebo/models
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$~/catkin_ws/devel/lib
 ```
+7. Checkout ```mighty/gazebosim``` branch in [GeneralCode](https://github.com/muellerlab/GeneralCode/tree/mighty/gazebosim).
+```
+git checkout mighty/gazebosim
+```
+
+Note: This works as of 8/6/18 with the most recent push to master (11f6501). If this doesn't work in the future, the only change I made to 11f6501 is including the physical properties of the Iris Model into a custom quadcopter type in ```Components/Components/Logic/QuadcopterConstants.hpp``` under case 37.
+
 
 ## Running the Simulator
-... Vehicle ID?
+Run the launch file to Gazebo environment with Iris Model.
+```
+roslaunch hiperlab_gazebo iris.launch
+```
+Run the rates controller.
+```
+rosrun hiperlab_rostools quad_mocap_rates_controller 37
+```
+Run joystick input.
+```
+rosrun hiperlab_hardware keyboard
+```
+
