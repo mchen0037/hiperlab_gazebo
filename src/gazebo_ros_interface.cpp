@@ -50,9 +50,9 @@ namespace gazebo {
     updateConnection_ = event::Events::ConnectWorldUpdateBegin(
         boost::bind(&GazeboRosInterface::OnUpdate, this, _1));
 
-    //********************************************
-    //**      GAZEBO TRANSPORTATION SYSTEM      **
-    //********************************************
+    /********************************************|
+    |**      GAZEBO TRANSPORTATION SYSTEM      **|
+    |********************************************/
 
     gazebo::transport::NodePtr gzNode(new gazebo::transport::Node());
     //using this->gzNode will break the code.
@@ -70,9 +70,9 @@ namespace gazebo {
     cmd_motor_speed_pub = gzNode->Advertise<mav_msgs::msgs::CommandMotorSpeed>
       (cmd_motor_speed_topic_name, 1);
 
-    //********************************************
-    //**               ROS SYSTEM               **
-    //********************************************
+    /********************************************|
+    |**               ROS SYSTEM               **|
+    |********************************************/
 
     //init ROS
     if (!ros::isInitialized()) {
@@ -147,7 +147,7 @@ namespace gazebo {
       cmd_motor_speed_pub->Publish(turning_velocities_msg);
     }
 
-    //for debugging
+    // for debugging
     // if (debugTimer->GetSeconds<double>() > timePrintNextInfo) {
     //   timePrintNextInfo += 1;
     //   vehicle->_logic->PrintStatus();
@@ -187,6 +187,8 @@ namespace gazebo {
     msg.attroll = quatToEuler.x;
     msg.attpitch = quatToEuler.y;
     msg.attyaw = quatToEuler.z;
+
+    msg.header.stamp = ros::Time::now();
 
     return msg;
   }
@@ -291,6 +293,8 @@ namespace gazebo {
 
     //FIXME: Handle vehicleID
     current_truth.vehicleID = 5;
+
+    current_truth.header.stamp = ros::Time::now();
     return current_truth;
   }
 
