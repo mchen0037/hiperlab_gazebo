@@ -47,7 +47,7 @@ Run joystick input.
 ```
 $ rosrun hiperlab_hardware keyboard
 ```
-___
+
 ## Writing Gazebo Plugins
 Make sure you install Gazebo dev.
 ```
@@ -79,5 +79,41 @@ You can also create custom messages, which can be found in the [/msgs](https://g
 
 You can use ```msg.DebugString()``` to print out the values of the message, and ```vector_msg.x()``` to access the elements of the message. 
 
-___ 
 ## Transporting Data to/from ROS
+Gazebo plugins can also be registered as ROS Nodes, but I handled all of the ROS-ness inside of [ros_gazebo_interface.cpp](https://github.com/mchen0037/hiperlab_gazebo/blob/master/src/gazebo_ros_interface.cpp). There's nothing too new about this--describe the subscription options a corresponding callback function, and publish the same way as any other ROS node.
+
+Plotting it in rqt_graph should give you something like this:
+FIXME: <img src="https://github.com/mchen0037/hiperlab_gazebo/blob/master/doc/Gazebo%20rqt_graph.png">
+
+## Using New Models
+Nathan was able to convert a Solidworks file into an urdf through some plugin, I'm not sure how he did that, so I'm making an assumption that you have an urdf file readily available to you.
+
+I recommend converting the model into a .sdf file before anything--it saves you some xml tags and looks a little cleaner. The way I did this:
+1. Place model package into catkin_ws and compile it. Models should come as ROS packages, with a package.xml and CMakeLists.txt.
+2. Load Gazebo
+```
+$ roslaunch gazebo_ros empty_world.launch
+```
+3. Load URDF model into the GUI.
+```
+$ rosrun gazebo_ros spawn_model -file (path to file).urdf -urdf -model my_object
+```
+4. Right click the model in the GUI to open the Model Editor (Edit model).
+5. Ctrl-X will close the Model Editor and prompt and ask if you want to save.
+6. Save the model, which will be an SDF file.
+
+I placed the sdf file in [/models](https://github.com/mchen0037/hiperlab_gazebo/tree/master/models), and other meshes in [/rotors_description](https://github.com/mchen0037/hiperlab_gazebo/tree/master/models/rotors_description). As long as you correctly identify the path to where bits and pieces of the model are in your sdf file, you should be okay.
+
+For example, the rotors point to a [.dae](https://github.com/mchen0037/hiperlab_gazebo/tree/master/models/rotors_description/meshes) file inside of models/rotors_description/meshes, which is specified in line 124, ```<uri>model://rotors_description/meshes/iris_prop_ccw.dae</uri>``` of [iris.sdf](https://github.com/mchen0037/hiperlab_gazebo/blob/master/models/iris/iris.sdf).
+
+model:// is defined by the line that we export earlier in the setup.
+```
+$ export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/catkin_ws/src/hiperlab_gazebo/models
+```
+
+## TODO List
+* Fix dynamics of Crazyflie
+* Handle different flight controller types (only works with quad_mocap_rates_controller).
+* Include [Contact Sensor](http://gazebosim.org/tutorials?tut=contact_sensor), write a corresponding contact plugin
+* Include [Camera](gazebosim.org/tutorials?tut=ros_depth_camera&cat=connect_ros) on Models, write a corresponding camera plugin
+* Find/Create different worlds to simulate vehicle in, rather than empty_world.
