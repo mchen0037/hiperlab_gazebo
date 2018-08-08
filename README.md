@@ -86,7 +86,7 @@ Plotting it in rqt_graph should give you something like this:
 FIXME: <img src="https://github.com/mchen0037/hiperlab_gazebo/blob/master/doc/Gazebo%20rqt_graph.png">
 
 ## Using New Models
-Nathan was able to convert a Solidworks file into an urdf through some plugin, I'm not sure how he did that, so I'm making an assumption that you have an urdf file readily available to you.
+You're able to convert Solidworks files into an .urdf package. See Nathan for more details.
 
 I recommend converting the model into a .sdf file before anything--it saves you some xml tags and looks a little cleaner. The way I did this:
 1. Place model package into catkin_ws and compile it. Models should come as ROS packages, with a package.xml and CMakeLists.txt.
